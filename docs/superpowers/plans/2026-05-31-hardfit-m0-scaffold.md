@@ -180,12 +180,7 @@ Run:
 rm -rf node_modules
 pnpm install
 ```
-Expected: with `strictDepBuilds: true`, the install **fails** and lists packages whose build scripts were blocked (typically `esbuild`, and — once Tailwind is added in Task 5 — `@tailwindcss/oxide`). **Review each listed package** (these are native-binary builders, legitimate for this stack), then add the reviewed ones to `onlyBuiltDependencies` in `pnpm-workspace.yaml`. After scaffold (before Tailwind/Biome), expect at least:
-```yaml
-onlyBuiltDependencies:
-  - esbuild
-```
-Re-run `pnpm install` until it succeeds. **Re-run this review step whenever a new dependency triggers a blocked-script failure in later tasks** — you will add `@tailwindcss/oxide` in Task 5 and `workerd` (for `wrangler`) in Task 8. The final reviewed allowlist will be roughly: `esbuild`, `@tailwindcss/oxide`, `workerd`.
+Expected: with `strictDepBuilds: true`, if any dependency has an `install`/`postinstall`/`preinstall` lifecycle script, the install **fails** and lists them; **review each** (allow only legitimate native-binary builders) and add the reviewed ones to `onlyBuiltDependencies`. **Verified note for this stack:** Vite 8 uses **Rolldown, not esbuild** (its native binding `@rolldown/binding-*` ships prebuilt with no build script), and the bare scaffold has **zero** packages with install scripts — so at this point `pnpm install` **succeeds with `onlyBuiltDependencies: []`**, which is the correct least-privilege result (do NOT force-add `esbuild` — it isn't in the tree). The allowlist gets populated only as later tasks add scripted deps: `@tailwindcss/oxide` (Task 5) and `workerd` for `wrangler` (Task 8). **Re-run this review step whenever a `pnpm add` fails on a blocked build script.**
 
 - [ ] **Step 4: Verify the hardening is actually active (behaviorally, not via `pnpm config`)**
 
@@ -593,11 +588,11 @@ Add to `package.json` scripts:
 
 - [ ] **Step 3: Run it**
 
-Run:
+Run (use `pnpm run licenses` — bare `pnpm licenses` collides with pnpm's built-in `licenses` subcommand and won't run the script):
 ```bash
-pnpm licenses
+pnpm run licenses
 ```
-Expected: exits 0. If it reports a disallowed/unknown license, investigate that dependency; add the license to the allow-list **only** if it is genuinely permissive (do not blanket-allow).
+Expected: exits 0. If it reports a disallowed/unknown license, investigate that dependency; add the license to the allow-list **only** if it is genuinely permissive (do not blanket-allow). **Note:** keep build-time-only tooling (Tailwind, Vite plugins) in `devDependencies` — e.g. `@tailwindcss/vite` transitively pulls in `lightningcss` (MPL-2.0), which would fail this production gate if Tailwind were a runtime `dependency`.
 
 - [ ] **Step 4: Commit**
 
@@ -693,7 +688,7 @@ jobs:
       - name: Unit tests
         run: pnpm test
       - name: Licenses
-        run: pnpm licenses
+        run: pnpm run licenses   # NOT `pnpm licenses` (collides with pnpm's built-in subcommand)
       - name: Build
         run: pnpm build
       - name: Install Playwright browser
@@ -784,11 +779,11 @@ Free, bilingual (EN/ES), client-side web app for fitting data to probability dis
 pnpm install            # install (exact pins, scripts blocked unless allowlisted)
 pnpm dev                # start the dev server
 pnpm build              # production build → dist/
-pnpm typecheck          # tsc --noEmit
+pnpm typecheck          # tsc -b (project references)
 pnpm check              # Biome lint + format check
 pnpm test               # Vitest unit tests
 pnpm build && pnpm e2e  # Playwright smoke + a11y + CSP tests (serves dist under the real CSP via wrangler)
-pnpm licenses           # license-compliance gate
+pnpm run licenses       # license-compliance gate (bare `pnpm licenses` is a built-in subcommand)
 ```
 
 ## Deploy
@@ -860,11 +855,11 @@ In the Cloudflare dashboard → **Workers & Pages → Create → Pages → Conne
 
 - [ ] **Step 3: Verify the deployment is live and headers apply**
 
-First confirm the production HTML has no inline executable `<script>` that the CSP would block (the blank-page failure mode):
+First confirm the production HTML has no inline executable `<script>` that the CSP would block (the blank-page failure mode). Portable check (BSD/macOS grep lacks PCRE lookaheads) — list every script tag and confirm each has a `src=`:
 ```bash
-pnpm build && grep -nE '<script(?![^>]*\bsrc=)[^>]*>[^<]' dist/index.html || echo "OK: no inline executable scripts"
+pnpm build && grep -no '<script[^>]*>' dist/index.html
 ```
-Expected: `OK: no inline executable scripts`. (The e2e "no console errors under the real CSP" test from Task 8 already gates this in CI; this is a fast manual double-check.)
+Expected: every printed `<script ...>` includes `src=` (with `modulePreload.polyfill:false`, Vite emits one external module script and no inline script). The e2e "no console errors under the real CSP" test (Tasks 8/10) already gates this in CI; this is a fast manual double-check.
 
 Then, after the first deploy, run (replace with your real `*.pages.dev` URL):
 ```bash
