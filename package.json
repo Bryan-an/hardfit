@@ -13,17 +13,17 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "licenses": "license-checker-rseidelsohn --production --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;BlueOak-1.0.0;CC0-1.0;Unlicense;Python-2.0;BSL-1.0' --excludePrivatePackages"
   },
   "dependencies": {
-    "@tailwindcss/vite": "4.3.0",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "tailwindcss": "4.3.0"
+    "react-dom": "^19.2.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.3",
     "@biomejs/biome": "2.4.16",
+    "@tailwindcss/vite": "4.3.0",
     "@playwright/test": "1.60.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
@@ -35,6 +35,8 @@
     "@vitest/coverage-v8": "4.1.7",
     "fast-check": "4.8.0",
     "jsdom": "29.1.1",
+    "license-checker-rseidelsohn": "5.0.1",
+    "tailwindcss": "4.3.0",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
     "vitest": "4.1.7",
