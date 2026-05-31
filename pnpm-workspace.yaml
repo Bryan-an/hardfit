@@ -2,9 +2,9 @@
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude: []
 strictDepBuilds: true
-# Native-binary builders allowlisted least-privilege. All are wrangler's
-# (e2e dev server) toolchain: esbuild = its bundler, workerd = the Workers
-# runtime, sharp (via miniflare) = libvips image bindings.
+# Native-binary builders allowlisted least-privilege (dev-only toolchain):
+# esbuild = bundler used by Vite 8 and wrangler; workerd = the Workers
+# runtime (wrangler); sharp (via miniflare) = libvips image bindings.
 onlyBuiltDependencies:
   - esbuild
   - sharp
