@@ -12,7 +12,8 @@
     "check": "biome check .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@tailwindcss/vite": "4.3.0",
@@ -21,7 +22,9 @@
     "tailwindcss": "4.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.3",
     "@biomejs/biome": "2.4.16",
+    "@playwright/test": "1.60.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
@@ -34,7 +37,8 @@
     "jsdom": "29.1.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.12",
-    "vitest": "4.1.7"
+    "vitest": "4.1.7",
+    "wrangler": "4.95.0"
   },
   "packageManager": "pnpm@10.34.1+sha512.b58fbde6dca66a929538021581f648b4570b6ca19b18e7cbd7f2c07a7b24454155388dacdf08f2af3678e88a6d1fe04f9d609df24bf51735a060ea041b374ab7",
   "engines": {
