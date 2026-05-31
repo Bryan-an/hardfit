@@ -1,0 +1,5 @@
+# pnpm reads project settings from this file in pnpm 10. No `packages:` key needed for a single-package repo.
+minimumReleaseAge: 1440
+minimumReleaseAgeExclude: []
+strictDepBuilds: true
+onlyBuiltDependencies: []
