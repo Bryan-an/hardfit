@@ -85,6 +85,10 @@ describe('betaprime', () => {
   })
   it('rejects non-positive data (support is x > 0)', () =>
     expect(() => betaprime.fit([0.5, 1.2, 0, 2.3])).toThrow(/x > 0/))
+  it('throws (never returns out-of-support shapes) on extreme-spread data', () =>
+    // ~24 orders of magnitude of spread drives the Newton step into a region the positivity
+    // backtrack can't keep feasible; fit() must throw (→ reported failure), not return α/β <= 0.
+    expect(() => betaprime.fit([1e-12, 1e12, 1, 1])).toThrow(/degenerate/))
   it('k = 2', () => expect(betaprime.k).toBe(2))
   it("kind = 'continuous'", () => expect(betaprime.kind).toBe('continuous'))
 })

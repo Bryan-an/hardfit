@@ -48,7 +48,9 @@ export const beta: Distribution = {
   kind: 'continuous',
   fit(data): BetaParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`beta: need n >= ${MIN_SAMPLE_SIZE}`)
-    if (data.some((v) => v <= 0 || v >= 1)) throw new Error('beta requires all 0 < x < 1')
+    // Single positive predicate so NaN/±Infinity are rejected too (NaN <= 0 and NaN >= 1 are both
+    // false, so the negated `v <= 0 || v >= 1` form would let a NaN observation slip through).
+    if (data.some((v) => !(v > 0 && v < 1))) throw new Error('beta requires all 0 < x < 1')
     // Degenerate (no-spread) guard via the data RANGE, which is float-exact for identical values.
     // (A variance check is not: for constant data like [0.4, 0.4, 0.4] the computed mean carries a
     // rounding residual, so populationVariance returns ~1e-32 > 0 and the MLE would not converge.)

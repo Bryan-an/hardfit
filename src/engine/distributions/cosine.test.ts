@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { expectClose } from '../../test/relClose'
 import { cosine } from './cosine'
 
-/** Mirrors cosine.ts: MoM scale = sd / sqrt(pi^2/3 - 2); the seed is widened past max|x-mu0|. */
+/** Mirrors cosine.ts: MoM scale = pi * sd / sqrt(pi^2/3 - 2); the seed is widened past max|x-mu0|. */
 const MOM_SCALE_DENOM = Math.sqrt((Math.PI * Math.PI) / 3 - 2)
 const SEED_WIDEN = 1.05
 
@@ -76,7 +76,7 @@ describe('cosine', () => {
     let varSum = 0
     for (const x of sample) varSum += (x - mu0) * (x - mu0)
     const sd = Math.sqrt(varSum / sample.length)
-    const s0 = Math.max(sd / MOM_SCALE_DENOM, SEED_WIDEN * maxAbsDev(sample, mu0))
+    const s0 = Math.max((Math.PI * sd) / MOM_SCALE_DENOM, SEED_WIDEN * maxAbsDev(sample, mu0))
     expect(llClosedForm(sample, p.mu, p.s)).toBeGreaterThanOrEqual(
       llClosedForm(sample, mu0, s0) - 1e-9,
     )

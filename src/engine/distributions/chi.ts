@@ -55,6 +55,10 @@ export const chi: Distribution = {
     for (const v of data) sumSq += v * v
     const k0 = sumSq / data.length
     let a = k0 * HALF
+    // Seed fallback when sum-of-squares overflows to +Infinity (data ≳ 1.3e154): start from a
+    // finite positive so Newton can still march toward the (possibly huge) root.
+    if (!Number.isFinite(a) || a <= 0) a = 1
+    let converged = false
     for (let i = 0; i < MAX_NEWTON_ITERATIONS; i++) {
       const g = digamma(a) - target
       const gp = trigamma(a) // > 0, so g is strictly increasing with a unique root
@@ -65,8 +69,13 @@ export const chi: Distribution = {
         continue
       }
       a = next
-      if (Math.abs(step) < NEWTON_REL_TOL * a) break
+      if (Math.abs(step) < NEWTON_REL_TOL * a) {
+        converged = true
+        break
+      }
     }
+    // Converge-or-throw: never return a silently-unconverged k (fitAll reports it as a failure).
+    if (!converged) throw new Error('chi: failed to converge')
     return { k: 2 * a }
   },
   logpdf(x: number, p: FittedParams): number {

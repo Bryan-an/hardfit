@@ -17,11 +17,12 @@ const ROUND_TRIP_PROBS = [0.1, 0.5, 0.9]
 describe('invgamma', () => {
   it('logpdf passes SCALE directly into the beta slot: matches the elementary closed form', () => {
     // CONVENTION GUARD: invgamma pdf = beta^alpha / Gamma(alpha) * x^(-alpha-1) * exp(-beta/x), so
-    // logf = alpha*ln(beta) - lnΓ(alpha) + (-alpha-1)*ln(x) - beta/x. Use ASYMMETRIC params
-    // (alpha=0.5, beta=1, x=2) so the (shape,scale) slots are distinguishable and beta sits in the
-    // scale slot, not a rate. Written out BY HAND (NOT via @stdlib). Expected ≈ -2.112.
+    // logf = alpha*ln(beta) - lnΓ(alpha) + (-alpha-1)*ln(x) - beta/x. beta MUST be != 1 here: at
+    // beta=1 a rate-misread (passing 1/beta) collapses to the same value (ln 1 = 0, 1/x = beta/x),
+    // so the guard would be vacuous. With beta=2 both the alpha*ln(beta) and the -beta/x terms
+    // differ under a scale↔rate swap. Written out BY HAND (NOT via @stdlib).
     const alpha = 0.5
-    const beta = 1
+    const beta = 2
     const x = 2
     const expected = alpha * Math.log(beta) - gammaln(alpha) + (-alpha - 1) * Math.log(x) - beta / x
     expectClose(invgamma.logpdf(x, { shape: alpha, scale: beta }), expected, 1e-9)

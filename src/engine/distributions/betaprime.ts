@@ -98,8 +98,12 @@ export const betaprime: Distribution = {
       const appliedB = step * dB
       alpha = nextAlpha
       beta = nextBeta
-      if (!Number.isFinite(alpha) || !Number.isFinite(beta)) {
-        throw new Error('betaprime: degenerate (Newton iteration diverged)')
+      // The backtrack can exhaust `step > NEWTON_REL_TOL` while a shape is still <= 0 (extreme
+      // spread drives a huge step the halving can't shrink enough), so reject NON-POSITIVE as well
+      // as non-finite — both are outside the (alpha, beta > 0) support and must surface as a
+      // reported failure, never a returned out-of-support fit.
+      if (!(Number.isFinite(alpha) && Number.isFinite(beta) && alpha > 0 && beta > 0)) {
+        throw new Error('betaprime: degenerate (Newton iteration left the support)')
       }
       if (Math.abs(appliedA) < NEWTON_REL_TOL * alpha && Math.abs(appliedB) < NEWTON_REL_TOL * beta)
         break

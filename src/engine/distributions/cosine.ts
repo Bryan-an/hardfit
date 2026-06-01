@@ -8,8 +8,10 @@ import { type Distribution, DistributionName, type FittedParams } from '../types
 /** Fewest observations a 2-parameter cosine MLE can be estimated from. */
 const MIN_SAMPLE_SIZE = 2
 /** Method-of-moments scale factor: the raised cosine on [mu-s, mu+s] has variance
- *  s^2 (1/3 - 2/pi^2), so sd = s * sqrt(pi^2/3 - 2)/pi ⇒ s = sd / sqrt(pi^2/3 - 2).
- *  This MoM scale seeds the optimizer (it ignores the hard support barrier on its own). */
+ *  s^2 (1/3 - 2/pi^2), so sd = s * sqrt(pi^2/3 - 2)/pi ⇒ s = pi * sd / sqrt(pi^2/3 - 2).
+ *  (The pi factor matters: sqrt(pi^2/3 - 2) = pi * sqrt(1/3 - 2/pi^2), so dropping it makes the
+ *  MoM seed pi-times too small.) This MoM scale seeds the optimizer; the hard support barrier is
+ *  enforced separately by widening past max|x - mu0|. */
 const MOM_SCALE_DENOM = Math.sqrt((Math.PI * Math.PI) / 3 - 2)
 /** Seed-widening factor applied to max|x - mu0|: the support [mu0-s0, mu0+s0] MUST contain
  *  every observation or the seed log-likelihood is -inf, so s0 is forced strictly above the
@@ -152,7 +154,7 @@ export const cosine: Distribution = {
     const mu0 = mean(data)
     const sd = Math.sqrt(populationVariance(data, mu0))
     if (!(sd > 0)) throw new Error('cosine: degenerate (zero spread)')
-    const momScale = sd / MOM_SCALE_DENOM
+    const momScale = (Math.PI * sd) / MOM_SCALE_DENOM
     // Widen the seed scale so [mu0-s0, mu0+s0] STRICTLY contains all data (LL is finite at the seed).
     let mu = mu0
     let s = Math.max(momScale, SEED_WIDEN * maxAbsDev(data, mu0))

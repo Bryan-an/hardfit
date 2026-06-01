@@ -24,8 +24,11 @@ describe('chi', () => {
     const expected = 0 - 0.5 - 0.5 * Math.log(2) - gammaln(1.5)
     expectClose(chi.logpdf(1, { k: 3 }), expected, 1e-9)
   })
-  it('cdf(1, {k:2}) = 1 - e^{-1/2} (chi with k=2 is Rayleigh σ=1)', () => {
-    expectClose(chi.cdf(1, { k: 2 }), 1 - Math.exp(-0.5), 1e-9)
+  it('cdf(2, {k:2}) = 1 - e^{-2} (chi k=2 is Rayleigh σ=1; discriminates chi vs chi-squared)', () => {
+    // Evaluate at x=2, NOT x=1: at x=1, x²=x so chi.cdf(1,2) == chisquare.cdf(1,2) and the test
+    // could not catch the chi/chi-squared package swap. Chi k=2 CDF = 1 - e^{-x²/2}; at x=2 that
+    // is 1 - e^{-2} ≈ 0.8647, whereas a chi-squared(df=2) misread would give 1 - e^{-1} ≈ 0.6321.
+    expectClose(chi.cdf(2, { k: 2 }), 1 - Math.exp(-2), 1e-9)
   })
   it('quantile inverts cdf (round-trip)', () => {
     const p = { k: 3 }

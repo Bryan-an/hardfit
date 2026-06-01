@@ -49,9 +49,16 @@ export const chisquare: Distribution = {
     if (data.some((v) => v <= 0)) throw new Error('chisquare requires all x > 0')
     const meanLn = meanLog(data)
     if (!Number.isFinite(meanLn)) throw new Error('chisquare: degenerate (non-finite mean log)')
-    // Seed df0 = sample mean, since E[chi2(k)] = k.
-    let df = mean(data)
+    // Seed from the GEOMETRIC mean, not the arithmetic mean: the score g(k) depends only on
+    // mean(ln x), and for large k, mean(ln x) ≈ ln k, so exp(meanLn) lands in Newton's basin
+    // regardless of skew. (Seeding from the arithmetic mean diverges on heavy-tailed data — the
+    // root is geometric-mean-driven, so an AM ≫ GM seed needs >100 halvings to reach it and the
+    // loop would exhaust its cap with a garbage df.) Fall back to the arithmetic mean if exp
+    // overflows (data ~1e308): there AM ≈ GM, so the fallback is in-basin.
+    let df = Math.exp(meanLn)
+    if (!Number.isFinite(df) || df <= 0) df = mean(data)
     // 1-D Newton on the score g(k) = ln 2 + psi(k/2) - mean(ln x), monotone increasing -> unique root.
+    let converged = false
     for (let i = 0; i < MAX_NEWTON_ITERATIONS; i++) {
       const g = LN_TWO + digamma(df * HALF) - meanLn
       const gp = HALF * trigamma(df * HALF) // > 0 (g strictly increasing)
@@ -62,8 +69,14 @@ export const chisquare: Distribution = {
         continue
       }
       df = next
-      if (Math.abs(step) < NEWTON_REL_TOL * df) break
+      if (Math.abs(step) < NEWTON_REL_TOL * df) {
+        converged = true
+        break
+      }
     }
+    // Converge-or-throw: never return a silently-unconverged df (fitAll/bootstrap treat a throw as
+    // a reported failure rather than ranking a garbage fit).
+    if (!converged) throw new Error('chisquare: failed to converge')
     return { df }
   },
   logpdf(x: number, p: FittedParams): number {

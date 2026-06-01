@@ -48,10 +48,21 @@ describe('chisquare', () => {
     const score = Math.log(2) + digamma(p.df / 2) - meanLog(sample)
     expectClose(score, 0, 1e-7, 1e-9)
   })
-  it('LL at MLE >= LL at perturbed df', () => {
+  it('LL at MLE >= LL at perturbed df (both sides of the root)', () => {
     const p = chisquare.fit(sample) as ChiSquaredParams
     const ll = (q: ChiSquaredParams) => sample.reduce((acc, x) => acc + chisquare.logpdf(x, q), 0)
+    // Perturb BOTH up and down: a one-sided (up-only) check cannot catch a low-biased estimator.
     expect(ll(p)).toBeGreaterThanOrEqual(ll({ df: p.df * 1.2 }) - 1e-6)
+    expect(ll(p)).toBeGreaterThanOrEqual(ll({ df: p.df * 0.8 }) - 1e-6)
+  })
+  it('converges on heavy-skew data (geometric-mean seed; would diverge from the arithmetic mean)', () => {
+    // AM ≫ GM here; the score is geometric-mean-driven, so an arithmetic-mean seed exhausts the
+    // Newton cap with garbage. The fit must reach a finite df > 0 whose score is ~0.
+    const skewed = [0.05, 0.08, 0.12, 0.2, 0.3, 0.5, 0.9, 1.6, 4.0, 30.0]
+    const p = chisquare.fit(skewed) as ChiSquaredParams
+    expect(Number.isFinite(p.df)).toBe(true)
+    expect(p.df).toBeGreaterThan(0)
+    expectClose(Math.log(2) + digamma(p.df / 2) - meanLog(skewed), 0, 1e-7, 1e-9)
   })
   it('rejects non-positive data', () => expect(() => chisquare.fit([1, 0])).toThrow())
   it('k = 1', () => expect(chisquare.k).toBe(1))
