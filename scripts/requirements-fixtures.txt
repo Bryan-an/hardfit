@@ -1,0 +1,7 @@
+# Pinned dependencies for the scipy/R reference-fixture generator (scripts/gen_fixtures.py).
+# Run LOCALLY to regenerate tests/fixtures/scipy-r/*.json; the JSON is committed and CI
+# only asserts against it — never run Python in CI. See tests/fixtures/README.md.
+#
+# Verified to install cleanly on CPython 3.14.3 (cp314 wheels exist for both).
+numpy==2.3.4
+scipy==1.17.1
