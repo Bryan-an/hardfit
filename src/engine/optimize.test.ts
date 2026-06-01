@@ -19,8 +19,11 @@ function separableQuadratic(c: readonly number[]): (x: readonly number[]) => num
   }
 }
 
-/** 2-D Rosenbrock banana: f(x,y) = (1−x)² + 100(y−x²)²; global min 0 at (1,1).
- *  A single-pass Nelder–Mead from (−1.2, 1) stalls near ~1e-3; only restart-from-best reaches ~1e-6. */
+/** 2-D Rosenbrock banana: f(x,y) = (1−x)² + 100(y−x²)²; global min 0 at (1,1). The curved valley
+ *  starves a single Nelder–Mead pass UNDER A LIMITED PER-RESTART ITERATION BUDGET — used by test 2 to
+ *  show restart-from-best rescues a stalled single pass at the same per-pass budget. (NOTE: with the
+ *  default uncapped budget this implementation's single pass already reaches machine zero, so the
+ *  feature only becomes observable when the per-restart iteration cap is the binding constraint.) */
 function rosenbrock(v: readonly number[]): number {
   const x = v[0] ?? Number.NaN
   const y = v[1] ?? Number.NaN
@@ -55,11 +58,33 @@ describe('minimize (Nelder–Mead)', () => {
     expect(Math.abs(r.fx)).toBeLessThan(1e-9)
   })
 
-  it('2: 2-D Rosenbrock from (−1.2,1) reaches (1,1) to ~1e-6 (proves restart-from-best fired)', () => {
-    const r = minimize(rosenbrock, [-1.2, 1])
-    expectClose(r.x[0] ?? Number.NaN, 1, 1e-5, 1e-6)
-    expectClose(r.x[1] ?? Number.NaN, 1, 1e-5, 1e-6)
-    expect(r.fx).toBeLessThan(1e-6)
+  it('2: 2-D Rosenbrock — restart-from-best clears 1e-6 where a same-budget single pass stalls', () => {
+    // DISCRIMINATING test of the restart feature. `maxIterations` is PER RESTART, and the only way a
+    // run can exceed K total iterations under this API is via restart-from-best (there is no
+    // "continue the same simplex" path). So holding the per-restart budget fixed at K and toggling
+    // maxRestarts isolates restart-from-best exactly: more total iterations IS the restart feature.
+    //
+    // At K=40 the single pass stalls in the Rosenbrock valley at fx≈0.31 (~300× above the 1e-6 gate,
+    // verified by a K-sweep over 10..70), while three restarts (it≈120) polish to fx≈9e-14 (~8 orders
+    // below the gate) — a wide, platform-robust window on both sides. (The committed test asserted only
+    // the OUTCOME at the default budget, where the single pass ALREADY reaches ~1e-22 with ZERO
+    // restarts, so it pinned nothing about restart-from-best.)
+    const PER_RESTART_ITERS = 40
+    const single = minimize(rosenbrock, [-1.2, 1], {
+      maxRestarts: 0,
+      maxIterations: PER_RESTART_ITERS,
+    })
+    const restarted = minimize(rosenbrock, [-1.2, 1], {
+      maxRestarts: 2,
+      maxIterations: PER_RESTART_ITERS,
+    })
+    // Single pass at this per-restart budget stalls well above the gate (the premise the feature rescues)...
+    expect(single.fx).toBeGreaterThan(1e-3)
+    // ...and restart-from-best clears it at the SAME per-pass budget. Assert on fx, not `converged`: a
+    // final restart that hits its iteration cap mid-polish leaves the flag false even with fx < 1e-6.
+    expect(restarted.fx).toBeLessThan(1e-6)
+    // The improvement came from extra restart passes, not a longer single loop (K is per restart).
+    expect(restarted.iterations).toBeGreaterThan(single.iterations)
   })
 
   it('3: normal-MLE in (mu, ln sigma) reaches the MLE objective to ~machine zero (parity-shaped)', () => {
@@ -134,17 +159,28 @@ describe('minimize (Nelder–Mead)', () => {
   })
 
   it('10: −Inf on part of the domain is rejected like NaN (intentional −Inf→+Inf map)', () => {
-    // f = (x−2)² where x>0, but −Inf for x ≤ 0 (a degenerate "overfit" region). The optimizer must
-    // stay on the finite region and recover x=2, never collapse onto the −Inf basin.
+    // The −Inf region must be the ATTRACTOR for this to test anything: f = (x+3)² for x>0 (its
+    // UNCONSTRAINED minimum is x=−3, which lies INSIDE the rejected x≤0 region), and −Inf for x≤0.
+    // Descent is therefore driven leftward straight into the wall, so the simplex genuinely PROBES
+    // x≤0 (a counter proves it). The −Inf→+Inf map must reject those probes: with the map present the
+    // optimizer is pinned against the wall at x≈0⁺ (fx≈9, x>0); WITHOUT the map (if −Inf were accepted)
+    // it would collapse to x<0 onto the degenerate basin. A naive (x−2)² objective would NOT test this:
+    // its minimum is at x=2, away from the wall, so descent marches rightward and never probes x≤0
+    // (probedNonPositive=0) — the assertions would pass identically with or without the guard.
+    let probedNonPositive = 0
     const f = (v: readonly number[]) => {
       const x = v[0] ?? Number.NaN
-      if (x <= 0) return Number.NEGATIVE_INFINITY
-      return (x - 2) ** 2
+      if (x <= 0) {
+        probedNonPositive += 1
+        return Number.NEGATIVE_INFINITY
+      }
+      return (x + 3) ** 2
     }
     const r = minimize(f, [1])
-    expect(r.converged).toBe(true)
-    expectClose(r.x[0] ?? Number.NaN, 2, 1e-9)
-    expect(r.fx).toBeLessThan(1e-9)
+    // The objective forced the simplex to actually probe the rejected region...
+    expect(probedNonPositive).toBeGreaterThan(0)
+    // ...and the −Inf→+Inf map kept the result on the finite side of the wall (never the −Inf basin).
+    expect(r.x[0] ?? Number.NaN).toBeGreaterThan(0)
   })
 
   it('11: options override the constant defaults (custom fTol + maxIterations honored)', () => {
