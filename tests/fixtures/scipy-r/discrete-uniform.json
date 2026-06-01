@@ -1,0 +1,92 @@
+{
+  "distribution": "discrete-uniform",
+  "manifest": {
+    "python": "3.14.3",
+    "numpy": "2.3.4",
+    "scipy": "1.17.1"
+  },
+  "fixtures": [
+    {
+      "dataset": "count_tiny_3",
+      "data": [0, 1, 5],
+      "fixedParams": {
+        "a": 0.0,
+        "b": 5.0
+      },
+      "modeB": {
+        "ks": null,
+        "adRaw": null,
+        "cvm": null,
+        "chiSquared": {
+          "bins": 1,
+          "cells": [
+            {
+              "lo": 0,
+              "hi": 5,
+              "observed": 3,
+              "expected": 3.0
+            }
+          ],
+          "df": -2,
+          "statistic": 0.0
+        }
+      },
+      "modeA": {
+        "form": "closed-form",
+        "params": {
+          "a": 0.0,
+          "b": 5.0
+        },
+        "logLik": -5.375278407684165,
+        "aicc": "Infinity"
+      }
+    },
+    {
+      "dataset": "discrete_uniform_counts",
+      "data": [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 3, 4, 2, 5],
+      "fixedParams": {
+        "a": 1.0,
+        "b": 6.0
+      },
+      "modeB": {
+        "ks": null,
+        "adRaw": null,
+        "cvm": null,
+        "chiSquared": {
+          "bins": 3,
+          "cells": [
+            {
+              "lo": 1,
+              "hi": 2,
+              "observed": 6,
+              "expected": 6.666666666666666
+            },
+            {
+              "lo": 3,
+              "hi": 4,
+              "observed": 8,
+              "expected": 6.666666666666666
+            },
+            {
+              "lo": 5,
+              "hi": 6,
+              "observed": 6,
+              "expected": 6.666666666666668
+            }
+          ],
+          "df": 0,
+          "statistic": 0.40000000000000036
+        }
+      },
+      "modeA": {
+        "form": "closed-form",
+        "params": {
+          "a": 1.0,
+          "b": 6.0
+        },
+        "logLik": -35.8351893845611,
+        "aicc": 76.37626112206337
+      }
+    }
+  ]
+}

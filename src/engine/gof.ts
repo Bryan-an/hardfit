@@ -140,7 +140,13 @@ export function chiSquaredGofDiscrete(
   supportMin: number,
   supportMax: number, // may be Number.POSITIVE_INFINITY (unbounded counts)
   nParams: number,
-): { statistic: number; df: number; bins: number; pValue: number; cells: DiscreteChiSquaredCell[] } {
+): {
+  statistic: number
+  df: number
+  bins: number
+  pValue: number
+  cells: DiscreteChiSquaredCell[]
+} {
   const n = data.length
   // Observed count in the inclusive integer cell [lo, hi] (data are integers for a discrete fit).
   const countIn = (lo: number, hi: number): number => {

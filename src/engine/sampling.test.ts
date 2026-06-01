@@ -137,6 +137,38 @@ describe('makeSampler: Batch B sampler↔quantile convention guards', () => {
     expectSamplerMatchesQuantile(DistributionName.Beta, { alpha: 2, beta: 5 }))
 })
 
+describe('makeSampler: Batch C discrete sampler convention guards (empirical moments)', () => {
+  // Discrete quantiles are step functions, so the median/IQR cross-check is coarse; assert the
+  // closed-form mean/variance of the integer draws instead, which catch a wrong slot/convention.
+  it('poisson(lambda): mean ≈ var ≈ lambda', () => {
+    const lambda = 3
+    const s = drawSample(makeSampler(DistributionName.Poisson, { lambda }, SEED), SAMPLE_SIZE)
+    expectNear(mean(s), lambda)
+    expectNear(populationVariance(s), lambda)
+  })
+  it('geometric(p): mean ≈ (1-p)/p for the {0,1,…} failures convention', () => {
+    const p = 0.4
+    const s = drawSample(makeSampler(DistributionName.Geometric, { p }, SEED), SAMPLE_SIZE)
+    expectNear(mean(s), (1 - p) / p) // 1.5 — NOT 1/p (that would be the {1,2,…} convention)
+  })
+  it('negative-binomial(r, p): mean ≈ r(1-p)/p (0-based failure counts)', () => {
+    const r = 4
+    const p = 0.4
+    const s = drawSample(
+      makeSampler(DistributionName.NegativeBinomial, { r, p }, SEED),
+      SAMPLE_SIZE,
+    )
+    expectNear(mean(s), (r * (1 - p)) / p) // 6
+  })
+  it('discrete-uniform(a, b): mean ≈ (a+b)/2, var ≈ ((b-a+1)²-1)/12', () => {
+    const a = 1
+    const b = 6
+    const s = drawSample(makeSampler(DistributionName.DiscreteUniform, { a, b }, SEED), SAMPLE_SIZE)
+    expectNear(mean(s), (a + b) / 2) // 3.5
+    expectNear(populationVariance(s), ((b - a + 1) ** 2 - 1) / 12) // 35/12 ≈ 2.917
+  })
+})
+
 describe('makeSampler: reproducibility + guards', () => {
   it('same seed → identical first draws', () => {
     const params = { shape: 3, rate: 1.5, scale: 1 / 1.5 }

@@ -166,11 +166,14 @@ export interface ParamCI {
   method: 'bca' | 'percentile'
 }
 
-/** The fused-bootstrap result: per-parameter CIs plus the Lilliefors-correct GoF p-values. */
+/** The fused-bootstrap result: per-parameter CIs plus the Lilliefors-correct GoF p-values.
+ *  `gofPValues` is `null` for DISCRETE fits — the EDF statistics (KS/AD/CvM) are invalid under
+ *  the ties a discrete law produces, so resampling them would yield spurious ~1/(B+1) p-values;
+ *  the discrete χ² keeps its (table) p-value from the M2.1/Batch-C GoF battery instead. */
 export interface BootstrapFitResult {
   seed: number
   paramCIs: Record<string, ParamCI>
-  gofPValues: { ks: number; ad: number; cvm: number }
+  gofPValues: { ks: number; ad: number; cvm: number } | null
 }
 
 /** Knobs for {@link bootstrapFit}. `B` replicates, two-sided miscoverage `alpha`, one
@@ -225,11 +228,16 @@ export async function bootstrapFit(
   const { B, alpha, seed, onChunk, isCancelled } = options
   const n = data.length
 
-  // 1. Observed statistics at the original fit.
+  // EDF GoF resampling applies to CONTINUOUS fits only. For a discrete law the EDF statistics are
+  // invalid under ties, so we bootstrap the parameter CIs but skip the GoF tail counts (else they
+  // would resample to a spurious ~1/(B+1)); the discrete χ² uses its table p-value instead.
+  const resampleGof = dist.kind !== 'discrete'
+
+  // 1. Observed statistics at the original fit (continuous only).
   const cdfHat = (x: number): number => dist.cdf(x, fittedParams)
-  const ksObs = ksStatistic(data, cdfHat)
-  const adObs = adStatistic(data, cdfHat)
-  const cvmObs = cramerVonMises(data, cdfHat)
+  const ksObs = resampleGof ? ksStatistic(data, cdfHat) : Number.NaN
+  const adObs = resampleGof ? adStatistic(data, cdfHat) : Number.NaN
+  const cvmObs = resampleGof ? cramerVonMises(data, cdfHat) : Number.NaN
 
   // 2. ONE seeded sampler stream for all B·n draws.
   const draw = makeSampler(dist.name, fittedParams, seed)
@@ -264,10 +272,12 @@ export async function bootstrapFit(
       if (value !== undefined) reps[key]?.push(value)
     }
 
-    const cdfB = (x: number): number => dist.cdf(x, tb)
-    if (ksStatistic(sample, cdfB) >= ksObs) geKs++
-    if (adStatistic(sample, cdfB) >= adObs) geAd++
-    if (cramerVonMises(sample, cdfB) >= cvmObs) geCvm++
+    if (resampleGof) {
+      const cdfB = (x: number): number => dist.cdf(x, tb)
+      if (ksStatistic(sample, cdfB) >= ksObs) geKs++
+      if (adStatistic(sample, cdfB) >= adObs) geAd++
+      if (cramerVonMises(sample, cdfB) >= cvmObs) geCvm++
+    }
   }
 
   // 4. Jackknife for BCa acceleration (skipped above the cap → percentile fallback).
@@ -286,11 +296,10 @@ export async function bootstrapFit(
   }
 
   // 5. Lilliefors-correct bootstrap p-values: p = (1 + #{S* ≥ S_obs}) / (B + 1).
-  const gofPValues = {
-    ks: (1 + geKs) / (B + 1),
-    ad: (1 + geAd) / (B + 1),
-    cvm: (1 + geCvm) / (B + 1),
-  }
+  //    Discrete fits skip this (EDF tests invalid under ties) → gofPValues null.
+  const gofPValues = resampleGof
+    ? { ks: (1 + geKs) / (B + 1), ad: (1 + geAd) / (B + 1), cvm: (1 + geCvm) / (B + 1) }
+    : null
 
   return { seed, paramCIs, gofPValues }
 }

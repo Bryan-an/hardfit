@@ -5,17 +5,21 @@ import { cauchy } from './cauchy'
 import { chi } from './chi'
 import { chisquare } from './chisquare'
 import { cosine } from './cosine'
+import { discreteUniform } from './discrete-uniform'
 import { exponential } from './exponential'
 import { frechet } from './frechet'
 import { gamma } from './gamma'
+import { geometric } from './geometric'
 import { gumbel } from './gumbel'
 import { invgamma } from './invgamma'
 import { laplace } from './laplace'
 import { levy } from './levy'
 import { logistic } from './logistic'
 import { lognormal } from './lognormal'
+import { negativeBinomial } from './negative-binomial'
 import { normal } from './normal'
 import { pareto } from './pareto'
+import { poisson } from './poisson'
 import { rayleigh } from './rayleigh'
 import { uniform } from './uniform'
 import { weibull } from './weibull'
@@ -43,4 +47,9 @@ export const DISTRIBUTIONS: readonly Distribution[] = [
   betaprime,
   cosine,
   beta,
+  // M2.3 Batch C — discrete distributions.
+  poisson,
+  geometric,
+  negativeBinomial,
+  discreteUniform,
 ]

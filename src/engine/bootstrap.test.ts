@@ -163,14 +163,18 @@ describe('bootstrapFit (fused CIs + GoF p-values)', () => {
     const expFit = exponential.fit(normalData)
     const bad = await bootstrapFit(exponential, normalData, expFit, { B, alpha: ALPHA, seed: SEED })
 
+    // Continuous fits always carry GoF p-values (only discrete fits null them out).
+    const goodGof = good.gofPValues
+    const badGof = bad.gofPValues
+    if (goodGof === null || badGof === null) throw new Error('continuous fit must have gofPValues')
     // Direction-based bounds (each bootstrap GoF p is ~Uniform under a correct model):
-    expect(good.gofPValues.ks).toBeGreaterThan(0.1)
-    expect(good.gofPValues.ad).toBeGreaterThan(0.1)
-    expect(good.gofPValues.cvm).toBeGreaterThan(0.1)
-    expect(bad.gofPValues.ks).toBeLessThan(0.05)
-    expect(bad.gofPValues.ad).toBeLessThan(0.05)
-    expect(bad.gofPValues.cvm).toBeLessThan(0.05)
-    expect(good.gofPValues.ks).toBeGreaterThan(bad.gofPValues.ks)
+    expect(goodGof.ks).toBeGreaterThan(0.1)
+    expect(goodGof.ad).toBeGreaterThan(0.1)
+    expect(goodGof.cvm).toBeGreaterThan(0.1)
+    expect(badGof.ks).toBeLessThan(0.05)
+    expect(badGof.ad).toBeLessThan(0.05)
+    expect(badGof.cvm).toBeLessThan(0.05)
+    expect(goodGof.ks).toBeGreaterThan(badGof.ks)
   })
 
   it('CANCELLATION: an isCancelled that returns true throws (checked at the first chunk)', async () => {
@@ -226,7 +230,8 @@ describe('bootstrapFit (fused CIs + GoF p-values)', () => {
     })
     expect(refits).toBe(20) // every replicate attempted the (throwing) refit
     // All replicates skipped → empty reps → finite p-values, percentile-only CIs.
-    expect(result.gofPValues.ks).toBeCloseTo(1 / (20 + 1), INVARIANT_PLACES)
+    expect(result.gofPValues).not.toBeNull()
+    expect(result.gofPValues?.ks).toBeCloseTo(1 / (20 + 1), INVARIANT_PLACES)
     for (const ci of Object.values(result.paramCIs)) {
       expect(ci.method).toBe('percentile')
     }

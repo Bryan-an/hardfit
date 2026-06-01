@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { exponential } from './distributions/exponential'
 import { normal } from './distributions/normal'
+import { poisson } from './distributions/poisson'
 import { goodnessOfFit } from './goodnessOfFit'
-import type { Distribution, FittedParams } from './types'
-import { DistributionName } from './types'
+import { DistributionName, type FittedParams } from './types'
 
 // n = 18 deterministic positive sample (matches fitAll.test). At n=18, k = max(2, ⌊18/5⌋) = 3,
 // so χ² df = k − 1 − nParams = 2 − nParams: k=2 fits (normal) → df 0 → null pValue;
@@ -68,32 +68,22 @@ describe('goodnessOfFit — continuous routing', () => {
 })
 
 describe('goodnessOfFit — discrete routing', () => {
-  // Minimal stub Distribution with kind:'discrete' to cover the routing fork. Real discrete
-  // binning lands in M2.3 Batch C; for now the branch throws a clear not-implemented error.
-  const discreteStub: Distribution = {
-    name: 'poisson-stub',
-    label: 'Poisson (stub)',
-    k: 1,
-    kind: 'discrete',
-    fit(): FittedParams {
-      return { lambda: 3 }
-    },
-    logpdf(): number {
-      return Number.NaN
-    },
-    cdf(): number {
-      return Number.NaN
-    },
-    quantile(): number {
-      return Number.NaN
-    },
-  }
+  // Integer counts so the discrete (Poisson) battery is well-defined.
+  const counts = [0, 1, 2, 1, 3, 0, 2, 1, 4, 2, 1, 0, 3, 2, 1]
 
-  it('routes discrete distributions to a clear not-implemented error', () => {
-    const params = discreteStub.fit([])
-    expect(() => goodnessOfFit(discreteStub, [1, 2, 3, 4, 5], params)).toThrow(
-      /discrete GoF not yet implemented/,
-    )
+  it('routes discrete distributions to the PMF-binned χ² with NaN-filled EDF columns', () => {
+    const params = poisson.fit(counts)
+    const gof = goodnessOfFit(poisson, counts, params)
+    // EDF tests (KS/AD/CvM) are invalid under ties → NaN sentinels (render as `— diag.`).
+    expect(Number.isNaN(gof.ks)).toBe(true)
+    expect(Number.isNaN(gof.ad.statistic)).toBe(true)
+    expect(gof.ad.pValue).toBeNull()
+    expect(Number.isNaN(gof.cvm.statistic)).toBe(true)
+    // The χ² IS the discrete test: a finite statistic over PMF/count bins, integer df + bins.
+    expect(Number.isFinite(gof.chiSquared.statistic)).toBe(true)
+    expect(gof.chiSquared.statistic).toBeGreaterThanOrEqual(0)
+    expect(Number.isInteger(gof.chiSquared.df)).toBe(true)
+    expect(gof.chiSquared.bins).toBeGreaterThanOrEqual(1)
   })
 
   it('does not affect the continuous path (kind is the dispatch key)', () => {

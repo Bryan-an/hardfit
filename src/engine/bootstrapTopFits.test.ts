@@ -85,7 +85,7 @@ describe('bootstrapTopFits', () => {
     )
 
     expect(Object.keys(result).sort()).toEqual(['exponential', 'normal'])
-    expect(result.normal?.gofPValues.ks).toBeGreaterThan(0)
+    expect(result.normal?.gofPValues?.ks).toBeGreaterThan(0)
     // overall progress monotone non-decreasing, ends at exactly 1.
     for (let i = 1; i < fractions.length; i++) {
       expect(fractions[i] ?? 0).toBeGreaterThanOrEqual(fractions[i - 1] ?? 0)

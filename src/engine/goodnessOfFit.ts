@@ -1,6 +1,17 @@
-import { adStatistic, chiSquaredGof, cramerVonMises, ksStatistic } from './gof'
+import {
+  adStatistic,
+  chiSquaredGof,
+  chiSquaredGofDiscrete,
+  cramerVonMises,
+  ksStatistic,
+} from './gof'
 import { adResult } from './gof-pvalues'
 import type { ChiSquaredResult, Distribution, Fit, FittedParams, PValueMethod } from './types'
+
+/** Default integer support for a discrete distribution that does not narrow it via `support()`:
+ *  the non-negative integers. (All Batch C count families are supported on {0,1,2,…} except
+ *  discrete-uniform, which supplies its own bounded `support`.) */
+const DEFAULT_DISCRETE_SUPPORT = { min: 0, max: Number.POSITIVE_INFINITY } as const
 
 /** Method labels reused from the `PValueMethod` union (no inline string literals). */
 const DIAGNOSTIC: PValueMethod = 'diagnostic'
@@ -46,9 +57,25 @@ export function goodnessOfFit(
   params: FittedParams,
 ): GoodnessOfFit {
   if (dist.kind === 'discrete') {
-    throw new Error(
-      `discrete GoF not yet implemented for '${dist.name}' (PMF-binned χ² lands in M2.3 Batch C)`,
+    // EDF tests (KS/AD/CvM) are invalid under the ties a discrete law produces, so the discrete
+    // battery is χ²-only over PMF/count bins; the EDF fields carry NaN sentinels (rendered as
+    // `— diag.` by the table). The chi-square is rigorous (PMF-binned) — see chiSquaredGofDiscrete.
+    const pmf = (x: number): number => Math.exp(dist.logpdf(x, params)) // logpdf carries log-PMF here
+    const support = dist.support?.(params) ?? DEFAULT_DISCRETE_SUPPORT
+    const raw = chiSquaredGofDiscrete(
+      data,
+      pmf,
+      (x: number) => dist.cdf(x, params),
+      support.min,
+      support.max,
+      dist.k,
     )
+    return {
+      ks: Number.NaN,
+      ad: { statistic: Number.NaN, pValue: null, method: DIAGNOSTIC },
+      cvm: { statistic: Number.NaN, pValue: null, method: DIAGNOSTIC },
+      chiSquared: toChiSquaredResult(raw),
+    }
   }
   const cdf = (x: number): number => dist.cdf(x, params)
   const quantile = (prob: number): number => dist.quantile(prob, params)
