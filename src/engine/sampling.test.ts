@@ -9,9 +9,8 @@ import { DistributionName, type FittedParams } from './types'
 const SEED = 20260601
 /** Distinct seed for the reproducibility check (any fixed value works). */
 const REPRO_SEED = 99
-/** Large-enough n that the seeded empirical moments / median+IQR concentrate well inside the 5%
- *  tolerance (SE ≈ 1–2% here) while keeping the 20 convention guards fast. Deterministic per seed. */
-const SAMPLE_SIZE = 8000
+/** Large n so the empirical mean/variance concentrate near their closed forms. */
+const SAMPLE_SIZE = 20000
 /** Relative tolerance for the stochastic-but-seeded moment checks (~5% of the value). */
 const MOMENT_RTOL = 0.05
 /** First-k draws compared when asserting two same-seed samplers agree. */

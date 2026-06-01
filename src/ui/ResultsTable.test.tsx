@@ -1,6 +1,3 @@
-// @vitest-environment jsdom
-// This React component test needs a DOM; the suite default is the fast `node` environment
-// (see vite.config.ts), so this file opts into jsdom explicitly.
 import '@testing-library/jest-dom/vitest'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
