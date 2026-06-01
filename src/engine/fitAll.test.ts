@@ -8,11 +8,13 @@ const sample = [
 ]
 
 describe('fitAll', () => {
-  it('fits all 13 distributions, ranks by AICc, weights sum to 1', () => {
+  it('fits 19 of 20 distributions on positive data (Beta needs (0,1)), ranks by AICc, weights sum to 1', () => {
     const res = fitAll(sample)
     expect(res.n).toBe(sample.length)
-    expect(res.ranked.length).toBe(13)
-    expect(res.failures.length).toBe(0)
+    // Beta requires 0 < x < 1; this sample has values > 1, so Beta is the sole reported failure
+    // and the other 19 distributions rank.
+    expect(res.ranked.length).toBe(19)
+    expect(res.failures.map((f) => f.name)).toEqual([DistributionName.Beta])
     const best = res.ranked[0]
     if (!best) throw new Error('expected at least one ranked fit')
     expect(best.rank).toBe(1)
@@ -40,16 +42,23 @@ describe('fitAll', () => {
   })
   it('reports failures (not crashes) when a distribution rejects the data', () => {
     const withNeg = [-1, 2, 3, 4, 5, 6]
-    // Every positive-support distribution rejects the negative value: lognormal/gamma/weibull/
-    // pareto/frechet need x > 0, and exponential/rayleigh need x >= 0. The real-support families
-    // (normal/uniform/laplace/logistic/gumbel/cauchy) survive.
+    // Positive-support families reject the negative value: lognormal/gamma/weibull/pareto/frechet/
+    // levy/chisquare/chi/invgamma/betaprime need x > 0, exponential/rayleigh need x >= 0, and beta
+    // needs 0 < x < 1 (both the -1 and the values > 1 violate it). The real-support families
+    // (normal/uniform/laplace/logistic/gumbel/cauchy/cosine) survive.
     const res = fitAll(withNeg)
     const failed = res.failures.map((f) => f.name).sort()
     expect(failed).toEqual(
       [
+        DistributionName.Beta,
+        DistributionName.BetaPrime,
+        DistributionName.Chi,
+        DistributionName.ChiSquared,
         DistributionName.Exponential,
         DistributionName.Frechet,
         DistributionName.Gamma,
+        DistributionName.InvGamma,
+        DistributionName.Levy,
         DistributionName.Lognormal,
         DistributionName.Pareto,
         DistributionName.Rayleigh,

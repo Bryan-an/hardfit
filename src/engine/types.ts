@@ -15,6 +15,14 @@ export const DistributionName = {
   Gumbel: 'gumbel',
   Cauchy: 'cauchy',
   Frechet: 'frechet',
+  // M2.3 Batch B — drop-in continuous distributions.
+  Levy: 'levy',
+  ChiSquared: 'chisquare',
+  Chi: 'chi',
+  InvGamma: 'invgamma',
+  BetaPrime: 'betaprime',
+  Cosine: 'cosine',
+  Beta: 'beta',
 } as const
 export type DistributionName = (typeof DistributionName)[keyof typeof DistributionName]
 

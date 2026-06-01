@@ -9,8 +9,9 @@ import { DistributionName, type FittedParams } from './types'
 const SEED = 20260601
 /** Distinct seed for the reproducibility check (any fixed value works). */
 const REPRO_SEED = 99
-/** Large n so the empirical mean/variance concentrate near their closed forms. */
-const SAMPLE_SIZE = 20000
+/** Large-enough n that the seeded empirical moments / median+IQR concentrate well inside the 5%
+ *  tolerance (SE ≈ 1–2% here) while keeping the 20 convention guards fast. Deterministic per seed. */
+const SAMPLE_SIZE = 8000
 /** Relative tolerance for the stochastic-but-seeded moment checks (~5% of the value). */
 const MOMENT_RTOL = 0.05
 /** First-k draws compared when asserting two same-seed samplers agree. */
@@ -121,6 +122,20 @@ describe('makeSampler: Batch A sampler↔quantile convention guards', () => {
     expectSamplerMatchesQuantile(DistributionName.Cauchy, { x0: 5, gamma: 2 }))
   it('frechet(shape, SCALE=s) — heavy tail, median/IQR', () =>
     expectSamplerMatchesQuantile(DistributionName.Frechet, { shape: 3, scale: 2 }))
+})
+
+describe('makeSampler: Batch B sampler↔quantile convention guards', () => {
+  it('levy(c) — moment-less (mu fixed 0), median/IQR', () =>
+    expectSamplerMatchesQuantile(DistributionName.Levy, { c: 2 }))
+  it('chisquare(df)', () => expectSamplerMatchesQuantile(DistributionName.ChiSquared, { df: 5 }))
+  it('chi(k)', () => expectSamplerMatchesQuantile(DistributionName.Chi, { k: 4 }))
+  it('invgamma(shape, SCALE=beta) — heavy tail, median/IQR', () =>
+    expectSamplerMatchesQuantile(DistributionName.InvGamma, { shape: 4, scale: 3 }))
+  it('betaprime(alpha, beta) — heavy tail, median/IQR', () =>
+    expectSamplerMatchesQuantile(DistributionName.BetaPrime, { alpha: 5, beta: 4 }))
+  it('cosine(mu, s)', () => expectSamplerMatchesQuantile(DistributionName.Cosine, { mu: 3, s: 2 }))
+  it('beta(alpha, beta) — support (0,1)', () =>
+    expectSamplerMatchesQuantile(DistributionName.Beta, { alpha: 2, beta: 5 }))
 })
 
 describe('makeSampler: reproducibility + guards', () => {

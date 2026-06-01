@@ -106,10 +106,26 @@ SIGNED_26 = [
 # Real-support families added in Batch A that additionally get the signed dataset.
 REAL_SUPPORT_FAMILIES = {"uniform", "laplace", "logistic", "gumbel", "cauchy"}
 
+# Strictly-(0,1) data for the Beta family (M2.3 Batch B): the positive datasets (values > 1) and
+# signed_26 are OUT OF SUPPORT for Beta. Values are strictly between 0 and 1 (no exact 0/1, which
+# break ln(x)/ln(1-x)); interior/unimodal with variance < m(1-m) so the MoM seed stays positive.
+# n = 22 -> chi-square k = floor(22/5) = 4 bins -> df = 4-1-2 = 1 for the k=2 Beta fit.
+UNIT_22 = [
+    0.42, 0.55, 0.38, 0.61, 0.47, 0.33, 0.58, 0.50, 0.44, 0.66, 0.29,
+    0.52, 0.39, 0.63, 0.48, 0.36, 0.57, 0.45, 0.60, 0.41, 0.53, 0.34,
+]
+# n = 3 in (0,1): trips the AICc n <= k+1 sentinel for the k=2 Beta fit.
+UNIT_TINY_3 = [0.3, 0.5, 0.7]
+
+# Bounded-(0,1) families (M2.3 Batch B) that use the unit-interval datasets instead of the positives.
+UNIT_INTERVAL_FAMILIES = {"beta"}
+
 
 def datasets_for(dist_name: str) -> dict[str, list[float]]:
-    """Datasets to emit for a family: the positive set for everyone, plus the signed set for the
-    real-support Batch A families (so negative data is exercised)."""
+    """Datasets to emit for a family: the positive set for everyone, the signed set added for the
+    real-support Batch A families, or the unit-interval set for the bounded-(0,1) Batch B families."""
+    if dist_name in UNIT_INTERVAL_FAMILIES:
+        return {"unit_tiny_3": UNIT_TINY_3, "unit_22": UNIT_22}
     if dist_name in REAL_SUPPORT_FAMILIES:
         return {**DATASETS, "signed_26": SIGNED_26}
     return DATASETS
@@ -529,6 +545,159 @@ def build_frechet(data: list[float]) -> dict:
     }
 
 
+# --- M2.3 Batch B builders -------------------------------------------------
+
+
+def build_levy(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # Closed-form MLE with location fixed at 0: c = n / sum(1/x) (harmonic mean).
+    c = float(n / np.sum(1.0 / arr))
+    rv = stats.levy(loc=0, scale=c)
+    # IDENTITY map: scipy levy `scale` == the @stdlib c (verified to 1e-14; do NOT invert).
+    fixed = {"c": c}
+    # Independent LL floor from scipy's own optimizer (scipy.levy.fit ~ analytic to 1e-5).
+    _loc_s, scale_s = stats.levy.fit(arr, floc=0)
+    ll = log_lik(data, stats.levy(loc=0, scale=scale_s))
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=1),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"c": c},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 1, n),
+        },
+    }
+
+
+def build_chisquare(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # chi-squared has NO real loc/scale (scale is fixed at 2 via the df shape) -> fix BOTH.
+    df, _loc, _scale = stats.chi2.fit(arr, floc=0, fscale=1)
+    rv = stats.chi2(df, loc=0, scale=1)
+    fixed = {"df": float(df)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=1),
+        "modeA": {
+            "form": "iterative",
+            "params": {"df": float(df)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 1, n),
+        },
+    }
+
+
+def build_chi(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    df, _loc, _scale = stats.chi.fit(arr, floc=0, fscale=1)
+    rv = stats.chi(df, loc=0, scale=1)
+    fixed = {"k": float(df)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=1),
+        "modeA": {
+            "form": "iterative",
+            "params": {"k": float(df)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 1, n),
+        },
+    }
+
+
+def build_invgamma(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # floc=0 ONLY: scale is a GENUINE parameter (= beta), unlike chi2/betaprime.
+    a, _loc, scale = stats.invgamma.fit(arr, floc=0)
+    rv = stats.invgamma(a, loc=0, scale=scale)
+    # HardFit {shape, scale}: scale IDENTITY (scipy scale == @stdlib beta SCALE slot; do NOT invert).
+    fixed = {"shape": float(a), "scale": float(scale)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"shape": float(a), "scale": float(scale)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_betaprime(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # @stdlib betaprime is shape-only (no scale) -> fix BOTH loc and scale.
+    a, b, _loc, _scale = stats.betaprime.fit(arr, floc=0, fscale=1)
+    rv = stats.betaprime(a, b, loc=0, scale=1)
+    fixed = {"alpha": float(a), "beta": float(b)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"alpha": float(a), "beta": float(b)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_cosine(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # cosine has REAL loc + scale (do NOT fix), but the default unseeded fit hits LL=-inf on
+    # skewed data, so SEED loc/scale: MoM scale widened to contain all data inside (loc +- pi*scale).
+    mu0 = float(np.mean(arr))
+    mom_scale = float(np.std(arr) / np.sqrt(np.pi**2 / 3.0 - 2.0))
+    need_scale = float(np.max(np.abs(arr - mu0)) / np.pi)
+    scale0 = max(mom_scale, need_scale * 1.05)
+    loc, scale = stats.cosine.fit(arr, loc=mu0, scale=scale0)
+    rv = stats.cosine(loc=loc, scale=scale)
+    # LOAD-BEARING: @stdlib support [mu-s, mu+s] == scipy [loc-pi*scale, loc+pi*scale], so the
+    # @stdlib scale s = pi * scipy_scale. Emitting `scale` directly is a silent gate failure.
+    fixed = {"mu": float(loc), "s": float(np.pi * scale)}
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"mu": float(loc), "s": float(np.pi * scale)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_beta(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # Beta on (0,1): fix BOTH loc=0 and scale=1 so only the two shapes are estimated.
+    a, b, _loc, _scale = stats.beta.fit(arr, floc=0, fscale=1)
+    rv = stats.beta(a, b, loc=0, scale=1)
+    fixed = {"alpha": float(a), "beta": float(b)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"alpha": float(a), "beta": float(b)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
@@ -544,6 +713,14 @@ BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "gumbel": build_gumbel,
     "cauchy": build_cauchy,
     "frechet": build_frechet,
+    # M2.3 Batch B
+    "levy": build_levy,
+    "chisquare": build_chisquare,
+    "chi": build_chi,
+    "invgamma": build_invgamma,
+    "betaprime": build_betaprime,
+    "cosine": build_cosine,
+    "beta": build_beta,
 }
 
 
