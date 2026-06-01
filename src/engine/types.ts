@@ -23,6 +23,11 @@ export const DistributionName = {
   BetaPrime: 'betaprime',
   Cosine: 'cosine',
   Beta: 'beta',
+  // M2.3 Batch C — discrete distributions.
+  Poisson: 'poisson',
+  Geometric: 'geometric',
+  NegativeBinomial: 'negative-binomial',
+  DiscreteUniform: 'discrete-uniform',
 } as const
 export type DistributionName = (typeof DistributionName)[keyof typeof DistributionName]
 
@@ -46,6 +51,10 @@ export interface Distribution {
   cdf(x: number, p: FittedParams): number
   /** Inverse CDF (quantile). Used for chi-square binning + (M2.2) bootstrap sampling. */
   quantile(prob: number, p: FittedParams): number
+  /** Integer support bounds for a DISCRETE distribution at the fitted params, driving the
+   *  PMF-binned chi-square (M2.3 Batch C). `max` may be `+Infinity` (unbounded counts).
+   *  Continuous distributions omit this (their GoF uses the EDF/quantile path instead). */
+  support?(p: FittedParams): { min: number; max: number }
 }
 
 /** How a reported p-value was obtained. */

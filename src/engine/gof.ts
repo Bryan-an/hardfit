@@ -64,6 +64,10 @@ export function cramerVonMises(data: readonly number[], cdf: (x: number) => numb
 
 /** Min expected count per equiprobable chi-square bin; k is chosen so E_j = n/k ≥ this. */
 const MIN_EXPECTED_PER_BIN = 5
+/** Defensive cap on the discrete support enumeration. The upper tail `n·(1−cdf(v))` strictly
+ *  decreases to 0, so the scan always terminates by dropping below MIN_EXPECTED_PER_BIN; this only
+ *  guards a pathological cdf that never reaches 1. Far above any realistic count support. */
+const MAX_DISCRETE_SCAN = 100_000
 
 /**
  * Pearson chi-squared GoF for a CONTINUOUS fit using equiprobable bins from the fitted quantile.
@@ -104,4 +108,76 @@ export function chiSquaredGof(
   const df = k - 1 - nParams
   const pValue = df >= 1 ? 1 - chi2cdf(statistic, df) : Number.NaN
   return { statistic, df, bins: k, pValue }
+}
+
+/** One chi-square cell of a discrete fit: the inclusive integer range [lo, hi] (hi may be the
+ *  support max, possibly +Infinity for the merged upper tail), with its observed + expected counts. */
+export interface DiscreteChiSquaredCell {
+  lo: number
+  hi: number
+  observed: number
+  expected: number
+}
+
+/**
+ * Pearson chi-squared GoF for a DISCRETE fit using PMF/count-based bins (the EDF tests KS/AD/CvM are
+ * invalid under the ties a discrete law produces). Cells are built by walking the integer support
+ * upward from `supportMin`, accumulating an open cell until BOTH its expected count `E = n·Σpmf(v)`
+ * reaches MIN_EXPECTED_PER_BIN AND the remaining upper tail `n·(1−cdf(v))` is still ≥ the minimum
+ * (so no sub-minimum tail is stranded). When the tail would drop below the minimum (or the finite
+ * support ends), the open cell and all remaining mass collapse into ONE final cell `[openLo, max]`
+ * whose expected is the exact remaining mass `n·(1−cdf(openLo−1))`. This greedy rule is fully
+ * deterministic and is mirrored byte-for-byte by `chi_squared_binning_discrete` in gen_fixtures.py;
+ * the parity gate pins the resulting cell edges + observed + expected, not just the statistic.
+ *   X² = Σ_j (O_j − E_j)² / E_j;  df = k − 1 − nParams;  p = df ≥ 1 ? 1 − χ²cdf(X², df) : NaN.
+ * NOTE (Chernoff–Lehmann): like the continuous χ², with parameters estimated from the same data the
+ * χ²(k−1−p) reference is anti-conservative for raw-data MLE, so this p-value is APPROXIMATE.
+ */
+export function chiSquaredGofDiscrete(
+  data: readonly number[],
+  pmf: (x: number) => number, // P(X = v) = exp(logpmf)
+  cdf: (x: number) => number, // F(v) = P(X ≤ v)
+  supportMin: number,
+  supportMax: number, // may be Number.POSITIVE_INFINITY (unbounded counts)
+  nParams: number,
+): { statistic: number; df: number; bins: number; pValue: number; cells: DiscreteChiSquaredCell[] } {
+  const n = data.length
+  // Observed count in the inclusive integer cell [lo, hi] (data are integers for a discrete fit).
+  const countIn = (lo: number, hi: number): number => {
+    let c = 0
+    for (const x of data) if (x >= lo && x <= hi) c++
+    return c
+  }
+  const cells: DiscreteChiSquaredCell[] = []
+  let openLo = supportMin
+  let accExpected = 0
+  for (let v = supportMin; v <= supportMax && v < supportMin + MAX_DISCRETE_SCAN; v++) {
+    accExpected += n * pmf(v)
+    const remainingTail = n * (1 - cdf(v)) // expected mass strictly above v
+    // Fold the open cell + all remaining mass into the final cell when the tail can no longer
+    // sustain its own minimum-expected cell, or the (finite) support ends at v.
+    if (remainingTail < MIN_EXPECTED_PER_BIN || v >= supportMax) break
+    if (accExpected >= MIN_EXPECTED_PER_BIN) {
+      cells.push({ lo: openLo, hi: v, observed: countIn(openLo, v), expected: accExpected })
+      openLo = v + 1
+      accExpected = 0
+    }
+  }
+  // Final cell [openLo, supportMax]: exact remaining mass via the CDF (not the partial accumulator),
+  // so it is correct whether the support is bounded (cdf(max)=1) or unbounded.
+  cells.push({
+    lo: openLo,
+    hi: supportMax,
+    observed: countIn(openLo, supportMax),
+    expected: n * (1 - cdf(openLo - 1)),
+  })
+  let statistic = 0
+  for (const cell of cells) {
+    const d = cell.observed - cell.expected
+    statistic += (d * d) / cell.expected
+  }
+  const k = cells.length
+  const df = k - 1 - nParams
+  const pValue = df >= 1 ? 1 - chi2cdf(statistic, df) : Number.NaN
+  return { statistic, df, bins: k, pValue, cells }
 }
