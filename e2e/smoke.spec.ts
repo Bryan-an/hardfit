@@ -33,7 +33,8 @@ test('fits the sample dataset end-to-end and renders ranked table + chart', asyn
   await page.goto('/')
   await page.getByRole('button', { name: 'Load sample' }).click()
 
-  // worker computes; ranked table appears with all 5 distributions
+  // worker computes; ranked table appears. Assert the 5 M1 families are present (the full
+  // catalog is larger — M2.3 Batch A added 8 more — but these five must always rank).
   await expect(page.getByRole('heading', { name: 'Ranked fits (by AICc)' })).toBeVisible({
     timeout: 15_000,
   })

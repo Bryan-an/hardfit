@@ -83,12 +83,36 @@ SKEWED_30 = [
 # so n - k - 1 = 1 > 0 → its AICc stays finite here; the sentinel fires for the rest.)
 TINY_3 = [1.5, 2.5, 4.0]
 
+# Strictly-positive datasets — valid for every family (the x>0 families require positivity;
+# the R-support and bounded families are happy with positives too).
 DATASETS: dict[str, list[float]] = {
     "tiny_3": TINY_3,
     "m1_sample": M1_SAMPLE,
     "spread_25": SPREAD_25,
     "skewed_30": SKEWED_30,
 }
+
+# n = 26, spans negatives and positives. Applied ONLY to the real-support families added in
+# M2.3 Batch A (uniform, laplace, logistic, gumbel, cauchy) so the gate exercises negative data,
+# not just positives. The x>0 families (lognormal/exponential/gamma/weibull/rayleigh/pareto/
+# frechet) and the pre-existing `normal` fixtures stay on the positive datasets only — no churn
+# to the already-green fixtures. k = floor(26/5) = 5 bins -> chi-square df = 5-1-2 = 2 for k=2.
+SIGNED_26 = [
+    -3.2, 1.4, -0.7, 2.9, -1.1, 0.3, 4.6, -2.5, 1.8, -0.2,
+    3.1, -1.9, 0.9, 2.2, -0.5, 1.1, -3.8, 2.7, -1.3, 0.6,
+    3.9, -0.9, 1.6, -2.1, 0.1, 2.4,
+]
+
+# Real-support families added in Batch A that additionally get the signed dataset.
+REAL_SUPPORT_FAMILIES = {"uniform", "laplace", "logistic", "gumbel", "cauchy"}
+
+
+def datasets_for(dist_name: str) -> dict[str, list[float]]:
+    """Datasets to emit for a family: the positive set for everyone, plus the signed set for the
+    real-support Batch A families (so negative data is exercised)."""
+    if dist_name in REAL_SUPPORT_FAMILIES:
+        return {**DATASETS, "signed_26": SIGNED_26}
+    return DATASETS
 
 # --- HardFit engine constants (mirror src/engine) --------------------------
 
@@ -215,11 +239,15 @@ def build_normal(data: list[float]) -> dict:
     rv = stats.norm(loc=loc, scale=scale)
     fixed = {"mu": float(loc), "sigma": float(scale)}
     n = len(arr)
-    # Mode A: analytic MLE (mean, population std with ddof=0).
+    # Mode A params: analytic MLE (mean, population std with ddof=0).
     mu_a = float(np.mean(arr))
     sigma_a = float(np.std(arr))  # numpy default ddof=0 -> population std
-    rv_a = stats.norm(loc=mu_a, scale=sigma_a)
-    ll = log_lik(data, rv_a)
+    # modeA.logLik comes from the INDEPENDENT scipy.fit frozen dist `rv` (NOT our analytic
+    # reference), so the universal "HardFit LL >= scipy.fit LL" cross-check cannot self-cancel a
+    # formula bug shared between this emit code and the TS engine. For the closed-form MLE
+    # families scipy.fit == analytic, so the emitted value is unchanged — only its provenance
+    # becomes formula-independent.
+    ll = log_lik(data, rv)
     return {
         "fixedParams": fixed,
         "modeB": gof_block(data, rv, n_params=2),
@@ -239,12 +267,13 @@ def build_lognormal(data: list[float]) -> dict:
     # HardFit: mu = ln(scale), sigma = s.
     fixed = {"mu": float(np.log(scale)), "sigma": float(s)}
     n = len(arr)
-    # Mode A: analytic normal MLE on the logs (population std, ddof=0).
+    # Mode A params: analytic normal MLE on the logs (population std, ddof=0).
     logs = np.log(arr)
     mu_a = float(np.mean(logs))
     sigma_a = float(np.std(logs))
-    rv_a = stats.lognorm(sigma_a, loc=0, scale=float(np.exp(mu_a)))
-    ll = log_lik(data, rv_a)
+    # modeA.logLik from the INDEPENDENT scipy.fit `rv` (see build_normal) — formula-independent
+    # cross-check; scipy.fit == analytic here, so the value is unchanged.
+    ll = log_lik(data, rv)
     return {
         "fixedParams": fixed,
         "modeB": gof_block(data, rv, n_params=2),
@@ -264,10 +293,11 @@ def build_exponential(data: list[float]) -> dict:
     # HardFit: rate = 1 / scale.
     fixed = {"rate": float(1.0 / scale)}
     n = len(arr)
-    # Mode A: analytic MLE rate = 1 / mean.
+    # Mode A params: analytic MLE rate = 1 / mean.
     rate_a = float(1.0 / np.mean(arr))
-    rv_a = stats.expon(loc=0, scale=1.0 / rate_a)
-    ll = log_lik(data, rv_a)
+    # modeA.logLik from the INDEPENDENT scipy.fit `rv` (see build_normal) — formula-independent
+    # cross-check; scipy.fit (floc=0) == analytic here, so the value is unchanged.
+    ll = log_lik(data, rv)
     return {
         "fixedParams": fixed,
         "modeB": gof_block(data, rv, n_params=1),
@@ -321,12 +351,199 @@ def build_weibull(data: list[float]) -> dict:
     }
 
 
+# --- M2.3 Batch A builders -------------------------------------------------
+
+
+def build_uniform(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # Mode B: scipy uniform.fit -> (loc=min, scale=max-min); the MLE is exact (min, max).
+    loc, scale = stats.uniform.fit(arr)
+    rv = stats.uniform(loc=loc, scale=scale)
+    # HardFit: a = loc (lower bound = min), b = loc + scale (upper bound = MAX, NOT the raw
+    # width/scale). Emitting `scale` into b is a silent gate failure — this is the load-bearing map.
+    fixed = {"a": float(loc), "b": float(loc + scale)}
+    n = len(arr)
+    # Mode A: analytic MLE a = min, b = max (unique closed form).
+    a_a = float(np.min(arr))
+    b_a = float(np.max(arr))
+    ll = log_lik(data, rv)  # independent scipy.fit LL (== analytic for uniform)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"a": a_a, "b": b_a},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_rayleigh(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    _loc, scale = stats.rayleigh.fit(arr, floc=0)
+    rv = stats.rayleigh(loc=0, scale=scale)
+    # HardFit: sigma = scale (IDENTITY — scipy's rayleigh `scale` IS the Rayleigh sigma; do NOT
+    # invert like exponential/gamma).
+    fixed = {"sigma": float(scale)}
+    n = len(arr)
+    # Mode A: analytic MLE sigma = sqrt(sum x^2 / 2n) — NOT scipy.fit's numerical scale.
+    sigma_a = float(np.sqrt(np.sum(arr**2) / (2 * n)))
+    ll = log_lik(data, rv)  # independent scipy.fit LL (numerical; <= analytic max)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=1),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"sigma": sigma_a},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 1, n),
+        },
+    }
+
+
+def build_pareto(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # Analytic MLE (closed form). scipy.pareto.fit is a fragile numerical optimizer, so the Mode-B
+    # frozen dist + the Mode-A param reference are built from the ANALYTIC MLE, NOT scipy.pareto.fit.
+    xm = float(np.min(arr))
+    alpha = float(n / np.sum(np.log(arr / xm)))
+    rv = stats.pareto(alpha, loc=0, scale=xm)
+    fixed = {"shape": alpha, "scale": xm}
+    # Independent LL cross-check: scipy's OWN numerical fit (does not share HardFit's closed form),
+    # so a formula bug shared by the Python emit + the TS engine lands below this and fails the gate.
+    b_s, _loc_s, scale_s = stats.pareto.fit(arr, floc=0)
+    ll = log_lik(data, stats.pareto(b_s, loc=0, scale=scale_s))
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"shape": alpha, "scale": xm},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_laplace(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # NO floc — Laplace's location is a FREE parameter (median). Forcing floc=0 would corrupt it.
+    loc, scale = stats.laplace.fit(arr)
+    rv = stats.laplace(loc=loc, scale=scale)
+    # Direct map (no inversion): mu = loc, b = scale (the Laplace diversity).
+    fixed = {"mu": float(loc), "b": float(scale)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    # LL-only gate (even-n median is non-unique): emit as "iterative" so the test gates LL, not params.
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"mu": float(loc), "b": float(scale)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_logistic(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    loc, scale = stats.logistic.fit(arr)  # NO floc (free location)
+    rv = stats.logistic(loc=loc, scale=scale)
+    fixed = {"mu": float(loc), "s": float(scale)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"mu": float(loc), "s": float(scale)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_gumbel(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # gumbel_r = MAX / right-skewed (matches @stdlib gumbel: CDF exp(-exp(-(x-mu)/beta))). NO floc.
+    loc, scale = stats.gumbel_r.fit(arr)
+    rv = stats.gumbel_r(loc=loc, scale=scale)
+    fixed = {"mu": float(loc), "beta": float(scale)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"mu": float(loc), "beta": float(scale)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_cauchy(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # NO floc — the floc=0 trap would pin the median at 0 and corrupt the oracle on positive data.
+    loc, scale = stats.cauchy.fit(arr)
+    rv = stats.cauchy(loc=loc, scale=scale)
+    fixed = {"x0": float(loc), "gamma": float(scale)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"x0": float(loc), "gamma": float(scale)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_frechet(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    # scipy invweibull == Frechet with m=0; floc=0 fixes the location at 0.
+    c, _loc, scale = stats.invweibull.fit(arr, floc=0)
+    rv = stats.invweibull(c, loc=0, scale=scale)
+    # HardFit: shape = c, scale = scale (SCALE slot, passed directly — no inversion).
+    fixed = {"shape": float(c), "scale": float(scale)}
+    n = len(arr)
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"shape": float(c), "scale": float(scale)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
     "exponential": build_exponential,
     "gamma": build_gamma,
     "weibull": build_weibull,
+    # M2.3 Batch A
+    "uniform": build_uniform,
+    "rayleigh": build_rayleigh,
+    "pareto": build_pareto,
+    "laplace": build_laplace,
+    "logistic": build_logistic,
+    "gumbel": build_gumbel,
+    "cauchy": build_cauchy,
+    "frechet": build_frechet,
 }
 
 
@@ -343,7 +560,7 @@ def main() -> None:
     mani = manifest()
     for dist_name, build in BUILDERS.items():
         fixtures = []
-        for dataset_name, data in DATASETS.items():
+        for dataset_name, data in datasets_for(dist_name).items():
             built = build(data)
             fixtures.append({"dataset": dataset_name, "data": data, **built})
         payload = {

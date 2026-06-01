@@ -8,10 +8,10 @@ const sample = [
 ]
 
 describe('fitAll', () => {
-  it('fits all 5 distributions, ranks by AICc, weights sum to 1', () => {
+  it('fits all 13 distributions, ranks by AICc, weights sum to 1', () => {
     const res = fitAll(sample)
     expect(res.n).toBe(sample.length)
-    expect(res.ranked.length).toBe(5)
+    expect(res.ranked.length).toBe(13)
     expect(res.failures.length).toBe(0)
     const best = res.ranked[0]
     if (!best) throw new Error('expected at least one ranked fit')
@@ -40,16 +40,19 @@ describe('fitAll', () => {
   })
   it('reports failures (not crashes) when a distribution rejects the data', () => {
     const withNeg = [-1, 2, 3, 4, 5, 6]
-    // Every positive-support distribution rejects the negative value: gamma/lognormal/weibull
-    // need x > 0, and exponential needs x >= 0 (its fit() guards on negatives). Only normal
-    // survives. (The plan's prose listed only gamma/lognormal/weibull, omitting exponential.)
+    // Every positive-support distribution rejects the negative value: lognormal/gamma/weibull/
+    // pareto/frechet need x > 0, and exponential/rayleigh need x >= 0. The real-support families
+    // (normal/uniform/laplace/logistic/gumbel/cauchy) survive.
     const res = fitAll(withNeg)
     const failed = res.failures.map((f) => f.name).sort()
     expect(failed).toEqual(
       [
         DistributionName.Exponential,
+        DistributionName.Frechet,
         DistributionName.Gamma,
         DistributionName.Lognormal,
+        DistributionName.Pareto,
+        DistributionName.Rayleigh,
         DistributionName.Weibull,
       ].sort(),
     )
