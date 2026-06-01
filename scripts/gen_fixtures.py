@@ -83,12 +83,36 @@ SKEWED_30 = [
 # so n - k - 1 = 1 > 0 → its AICc stays finite here; the sentinel fires for the rest.)
 TINY_3 = [1.5, 2.5, 4.0]
 
+# Strictly-positive datasets — valid for every family (the x>0 families require positivity;
+# the R-support and bounded families are happy with positives too).
 DATASETS: dict[str, list[float]] = {
     "tiny_3": TINY_3,
     "m1_sample": M1_SAMPLE,
     "spread_25": SPREAD_25,
     "skewed_30": SKEWED_30,
 }
+
+# n = 26, spans negatives and positives. Applied ONLY to the real-support families added in
+# M2.3 Batch A (uniform, laplace, logistic, gumbel, cauchy) so the gate exercises negative data,
+# not just positives. The x>0 families (lognormal/exponential/gamma/weibull/rayleigh/pareto/
+# frechet) and the pre-existing `normal` fixtures stay on the positive datasets only — no churn
+# to the already-green fixtures. k = floor(26/5) = 5 bins -> chi-square df = 5-1-2 = 2 for k=2.
+SIGNED_26 = [
+    -3.2, 1.4, -0.7, 2.9, -1.1, 0.3, 4.6, -2.5, 1.8, -0.2,
+    3.1, -1.9, 0.9, 2.2, -0.5, 1.1, -3.8, 2.7, -1.3, 0.6,
+    3.9, -0.9, 1.6, -2.1, 0.1, 2.4,
+]
+
+# Real-support families added in Batch A that additionally get the signed dataset.
+REAL_SUPPORT_FAMILIES = {"uniform", "laplace", "logistic", "gumbel", "cauchy"}
+
+
+def datasets_for(dist_name: str) -> dict[str, list[float]]:
+    """Datasets to emit for a family: the positive set for everyone, plus the signed set for the
+    real-support Batch A families (so negative data is exercised)."""
+    if dist_name in REAL_SUPPORT_FAMILIES:
+        return {**DATASETS, "signed_26": SIGNED_26}
+    return DATASETS
 
 # --- HardFit engine constants (mirror src/engine) --------------------------
 
@@ -215,11 +239,15 @@ def build_normal(data: list[float]) -> dict:
     rv = stats.norm(loc=loc, scale=scale)
     fixed = {"mu": float(loc), "sigma": float(scale)}
     n = len(arr)
-    # Mode A: analytic MLE (mean, population std with ddof=0).
+    # Mode A params: analytic MLE (mean, population std with ddof=0).
     mu_a = float(np.mean(arr))
     sigma_a = float(np.std(arr))  # numpy default ddof=0 -> population std
-    rv_a = stats.norm(loc=mu_a, scale=sigma_a)
-    ll = log_lik(data, rv_a)
+    # modeA.logLik comes from the INDEPENDENT scipy.fit frozen dist `rv` (NOT our analytic
+    # reference), so the universal "HardFit LL >= scipy.fit LL" cross-check cannot self-cancel a
+    # formula bug shared between this emit code and the TS engine. For the closed-form MLE
+    # families scipy.fit == analytic, so the emitted value is unchanged — only its provenance
+    # becomes formula-independent.
+    ll = log_lik(data, rv)
     return {
         "fixedParams": fixed,
         "modeB": gof_block(data, rv, n_params=2),
@@ -239,12 +267,13 @@ def build_lognormal(data: list[float]) -> dict:
     # HardFit: mu = ln(scale), sigma = s.
     fixed = {"mu": float(np.log(scale)), "sigma": float(s)}
     n = len(arr)
-    # Mode A: analytic normal MLE on the logs (population std, ddof=0).
+    # Mode A params: analytic normal MLE on the logs (population std, ddof=0).
     logs = np.log(arr)
     mu_a = float(np.mean(logs))
     sigma_a = float(np.std(logs))
-    rv_a = stats.lognorm(sigma_a, loc=0, scale=float(np.exp(mu_a)))
-    ll = log_lik(data, rv_a)
+    # modeA.logLik from the INDEPENDENT scipy.fit `rv` (see build_normal) — formula-independent
+    # cross-check; scipy.fit == analytic here, so the value is unchanged.
+    ll = log_lik(data, rv)
     return {
         "fixedParams": fixed,
         "modeB": gof_block(data, rv, n_params=2),
@@ -264,10 +293,11 @@ def build_exponential(data: list[float]) -> dict:
     # HardFit: rate = 1 / scale.
     fixed = {"rate": float(1.0 / scale)}
     n = len(arr)
-    # Mode A: analytic MLE rate = 1 / mean.
+    # Mode A params: analytic MLE rate = 1 / mean.
     rate_a = float(1.0 / np.mean(arr))
-    rv_a = stats.expon(loc=0, scale=1.0 / rate_a)
-    ll = log_lik(data, rv_a)
+    # modeA.logLik from the INDEPENDENT scipy.fit `rv` (see build_normal) — formula-independent
+    # cross-check; scipy.fit (floc=0) == analytic here, so the value is unchanged.
+    ll = log_lik(data, rv)
     return {
         "fixedParams": fixed,
         "modeB": gof_block(data, rv, n_params=1),
@@ -343,7 +373,7 @@ def main() -> None:
     mani = manifest()
     for dist_name, build in BUILDERS.items():
         fixtures = []
-        for dataset_name, data in DATASETS.items():
+        for dataset_name, data in datasets_for(dist_name).items():
             built = build(data)
             fixtures.append({"dataset": dataset_name, "data": data, **built})
         payload = {

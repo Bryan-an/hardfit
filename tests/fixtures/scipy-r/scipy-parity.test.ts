@@ -146,16 +146,24 @@ for (const distName of Object.values(DistributionName)) {
           const fitted = dist.fit(fx.data)
           const ll = logLik(fx.data, (x) => dist.logpdf(x, fitted))
 
+          // UNIVERSAL independent cross-check (closed-form AND iterative): HardFit's fitted
+          // log-likelihood must reach scipy's independent `.fit` LL (minus slack). scipy's
+          // optimizer does not share HardFit's MLE formula, so a formula bug replicated
+          // identically in the Python emit and the TS engine yields suboptimal params whose LL
+          // falls below scipy's here — it cannot self-cancel the way a param check against a
+          // shared-formula reference could. Degrades gracefully at boundary MLEs (uniform/Pareto),
+          // where a gradient≈0 check would misfire but HardFit-correct ≥ scipy ≥ HardFit-wrong.
+          expect(ll).toBeGreaterThanOrEqual(fx.modeA.logLik - LOG_LIK_SLACK)
+
           if (isClosedForm) {
+            // Closed-form families ALSO pin params to the numpy-analytic MLE at machine precision.
             for (const [key, ref] of Object.entries(fx.modeA.params)) {
               const value = fitted[key]
               expect(value, `missing fitted param "${key}"`).toBeTypeOf('number')
               expectClose(value as number, ref, PARITY_RTOL)
             }
           } else {
-            // HardFit must achieve a log-likelihood at least as good as scipy's.
-            expect(ll).toBeGreaterThanOrEqual(fx.modeA.logLik - LOG_LIK_SLACK)
-            // Params only as a loose diagnostic (scipy under-converges; not a gate).
+            // Iterative families: params are a loose diagnostic only (scipy under-converges).
             for (const [key, ref] of Object.entries(fx.modeA.params)) {
               const value = fitted[key]
               if (typeof value === 'number') expectClose(value, ref, ITERATIVE_PARAM_RTOL)
