@@ -14,7 +14,11 @@ export default defineConfig({
     // @playwright/test and run separately). tests/fixtures/scipy-r holds the
     // reference-fixture parity gate (reads committed JSON; no Python in CI).
     include: ['src/**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{test,spec}.{ts,tsx}'],
-    environment: 'jsdom',
+    // DEFAULT to the fast `node` environment: the engine, parity, and sampling suites
+    // (the overwhelming majority of files) are pure math with no DOM. jsdom instantiation
+    // per file dominated the run; only the React component tests need it and opt in via a
+    // `// @vitest-environment jsdom` docblock at the top of the file.
+    environment: 'node',
     globals: true,
     setupFiles: ['./vitest.setup.ts'],
     coverage: { provider: 'v8', reporter: ['text', 'lcov'] },
