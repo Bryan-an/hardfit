@@ -40,6 +40,9 @@ test('fits the sample dataset end-to-end and renders ranked table + chart', asyn
   for (const label of ['Normal', 'Lognormal', 'Exponential', 'Gamma', 'Weibull']) {
     await expect(page.getByText(label, { exact: true })).toBeVisible()
   }
+  // new GoF columns surfaced (Anderson-Darling, Chi-Squared)
+  await expect(page.getByRole('columnheader', { name: 'AD' })).toBeVisible()
+  await expect(page.getByRole('columnheader', { name: 'χ²' })).toBeVisible()
   // Plotly chart rendered
   await expect(page.locator('.plotly').first()).toBeVisible()
 
