@@ -6,6 +6,15 @@ export const DistributionName = {
   Exponential: 'exponential',
   Gamma: 'gamma',
   Weibull: 'weibull',
+  // M2.3 Batch A — drop-in continuous distributions.
+  Uniform: 'uniform',
+  Rayleigh: 'rayleigh',
+  Pareto: 'pareto',
+  Laplace: 'laplace',
+  Logistic: 'logistic',
+  Gumbel: 'gumbel',
+  Cauchy: 'cauchy',
+  Frechet: 'frechet',
 } as const
 export type DistributionName = (typeof DistributionName)[keyof typeof DistributionName]
 

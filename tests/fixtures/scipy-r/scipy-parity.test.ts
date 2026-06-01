@@ -96,6 +96,10 @@ const CLOSED_FORM_NAMES: readonly string[] = [
   DistributionName.Normal,
   DistributionName.Lognormal,
   DistributionName.Exponential,
+  // M2.3 Batch A closed-form MLE families (params gated to 1e-9 + the universal LL cross-check).
+  DistributionName.Uniform,
+  DistributionName.Rayleigh,
+  DistributionName.Pareto,
 ]
 
 for (const distName of Object.values(DistributionName)) {
