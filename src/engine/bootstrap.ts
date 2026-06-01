@@ -1,6 +1,9 @@
 import normalCdf from '@stdlib/stats-base-dists-normal-cdf'
 import normalQuantile from '@stdlib/stats-base-dists-normal-quantile'
+import { BCA_JACKKNIFE_MAX_N, CHUNK } from './constants'
+import { adStatistic, cramerVonMises, ksStatistic } from './gof'
 import { mean } from './math'
+import { makeSampler } from './sampling'
 import type { Distribution, FittedParams } from './types'
 
 /**
@@ -153,4 +156,141 @@ export function jackknife(dist: Distribution, data: readonly number[]): Record<s
     }
   }
   return result
+}
+
+/** Confidence interval for one fitted parameter: the point estimate and both intervals. */
+export interface ParamCI {
+  point: number
+  percentile: [number, number]
+  bca: [number, number]
+  method: 'bca' | 'percentile'
+}
+
+/** The fused-bootstrap result: per-parameter CIs plus the Lilliefors-correct GoF p-values. */
+export interface BootstrapFitResult {
+  seed: number
+  paramCIs: Record<string, ParamCI>
+  gofPValues: { ks: number; ad: number; cvm: number }
+}
+
+/** Knobs for {@link bootstrapFit}. `B` replicates, two-sided miscoverage `alpha`, one
+ *  `seed` for the whole stream; optional cooperative `onChunk`/`isCancelled` hooks. */
+export interface BootstrapFitOptions {
+  B: number
+  alpha: number
+  seed: number
+  onChunk?: (fraction: number) => void
+  isCancelled?: () => boolean
+}
+
+/** Thrown when `isCancelled` reports a cancellation at a chunk boundary. */
+export class BootstrapCancelledError extends Error {
+  constructor() {
+    super('bootstrapFit: cancelled')
+    this.name = 'BootstrapCancelledError'
+  }
+}
+
+/** A no-op yield to the event loop so a host worker can service messages between chunks. */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0))
+}
+
+/**
+ * The FUSED parametric-bootstrap loop (M2.2 U3): ONE pass over B replicates produces BOTH
+ * the per-parameter confidence intervals (percentile + BCa) AND the Lilliefors-correct GoF
+ * p-values for KS / Anderson–Darling / Cramér–von Mises. The only extra work is the single
+ * jackknife pass that supplies BCa's acceleration (capped by `jackknifeMaxN`).
+ *
+ * Algorithm:
+ *  1. Observed statistics S_obs at θ̂: KS/AD/CvM against `(x) => dist.cdf(x, fittedParams)`.
+ *  2. Seed ONE sampler `draw` from `(dist.name, fittedParams, seed)` — never rebuilt inside
+ *     the loop (rebuilding would replay identical samples, a silent statistical bug).
+ *  3. For b = 0..B−1: draw an n-sample, REFIT it (a degenerate synthetic sample throws →
+ *     `try/catch` skips that replicate), record each fitted param into `reps`, and for the
+ *     refitted CDF count S*_b ≥ S_obs into the GoF tail counters.
+ *  4. Jackknife (unless n exceeds the cap) → BCa per param; otherwise percentile only.
+ *  5. p = (1 + #{S*_b ≥ S_obs}) / (B + 1) — the `+1` form (Davison & Hinkley); never 0.
+ *
+ * ASYNC + chunked: every CHUNK iterations it reports progress (`onChunk(b/B)`), polls
+ * `isCancelled` (throwing {@link BootstrapCancelledError} when set), and yields a 0 ms timer
+ * — these are the worker's cancellation/responsiveness checkpoints.
+ */
+export async function bootstrapFit(
+  dist: Distribution,
+  data: readonly number[],
+  fittedParams: FittedParams,
+  options: BootstrapFitOptions,
+): Promise<BootstrapFitResult> {
+  const { B, alpha, seed, onChunk, isCancelled } = options
+  const n = data.length
+
+  // 1. Observed statistics at the original fit.
+  const cdfHat = (x: number): number => dist.cdf(x, fittedParams)
+  const ksObs = ksStatistic(data, cdfHat)
+  const adObs = adStatistic(data, cdfHat)
+  const cvmObs = cramerVonMises(data, cdfHat)
+
+  // 2. ONE seeded sampler stream for all B·n draws.
+  const draw = makeSampler(dist.name, fittedParams, seed)
+
+  // 3. Pre-initialize one reps array per fitted param (keeps reads index-safe and the
+  //    all-refits-skipped case from feeding percentileCI an absent array).
+  const reps: Record<string, number[]> = {}
+  for (const key of Object.keys(fittedParams)) reps[key] = []
+
+  let geKs = 0
+  let geAd = 0
+  let geCvm = 0
+
+  for (let b = 0; b < B; b++) {
+    if (b % CHUNK === 0) {
+      onChunk?.(b / B)
+      if (isCancelled?.()) throw new BootstrapCancelledError()
+      await yieldToEventLoop()
+    }
+
+    const sample = Array.from({ length: n }, () => draw())
+
+    let tb: FittedParams
+    try {
+      tb = dist.fit(sample)
+    } catch {
+      continue // degenerate synthetic sample → skip this replicate
+    }
+
+    for (const key of Object.keys(reps)) {
+      const value = tb[key]
+      if (value !== undefined) reps[key]?.push(value)
+    }
+
+    const cdfB = (x: number): number => dist.cdf(x, tb)
+    if (ksStatistic(sample, cdfB) >= ksObs) geKs++
+    if (adStatistic(sample, cdfB) >= adObs) geAd++
+    if (cramerVonMises(sample, cdfB) >= cvmObs) geCvm++
+  }
+
+  // 4. Jackknife for BCa acceleration (skipped above the cap → percentile fallback).
+  const jt = n <= BCA_JACKKNIFE_MAX_N ? jackknife(dist, data) : undefined
+
+  const paramCIs: Record<string, ParamCI> = {}
+  for (const [key, point] of Object.entries(fittedParams)) {
+    const repArr = reps[key] ?? []
+    const percentile = percentileCI(repArr, alpha)
+    const jackTheta = jt?.[key]
+    const bcaResult =
+      jackTheta !== undefined
+        ? bcaCI(point, repArr, jackTheta, alpha)
+        : { ci: percentile, method: 'percentile' as const }
+    paramCIs[key] = { point, percentile, bca: bcaResult.ci, method: bcaResult.method }
+  }
+
+  // 5. Lilliefors-correct bootstrap p-values: p = (1 + #{S* ≥ S_obs}) / (B + 1).
+  const gofPValues = {
+    ks: (1 + geKs) / (B + 1),
+    ad: (1 + geAd) / (B + 1),
+    cvm: (1 + geCvm) / (B + 1),
+  }
+
+  return { seed, paramCIs, gofPValues }
 }
