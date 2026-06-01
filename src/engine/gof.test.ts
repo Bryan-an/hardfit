@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { expectClose } from '../test/relClose'
-import { adStatistic, ksStatistic } from './gof'
+import { adStatistic, cramerVonMises, ksStatistic } from './gof'
 
 describe('ksStatistic', () => {
   it('uniform sample vs uniform CDF — exact small case', () => {
@@ -66,6 +66,39 @@ describe('adStatistic', () => {
   it('does not mutate the input array', () => {
     const data = [3, 1, 2]
     adStatistic(data, (x) => x / 3)
+    expect(data).toEqual([3, 1, 2]) // original order preserved
+  })
+})
+
+describe('cramerVonMises', () => {
+  it('uniform sample vs uniform CDF — golden W²', () => {
+    // sorted u = [0.25,0.5,0.75], F(x)=x, n=3. Plotting positions (2i+1)/(2n) = [1/6,1/2,5/6].
+    // W² = 1/(12·3) + (0.25−1/6)² + 0 + (0.75−5/6)² = 1/36 + 2·(1/12)² = 0.0416̄ (scipy n·ω²).
+    expectClose(
+      cramerVonMises([0.5, 0.25, 0.75], (x) => x),
+      0.041666666666666671,
+      1e-12,
+    )
+  })
+  it('four-point sample vs uniform CDF — golden W² matches 1/(12n)+Σ form', () => {
+    // sorted u = [0.1,0.4,0.6,0.9], n=4 → 1/48 + Σ(u_i−(2i+1)/8)² = 0.0233… (scipy n·ω²)
+    expectClose(
+      cramerVonMises([0.9, 0.1, 0.6, 0.4], (x) => x),
+      0.023333333333333,
+      1e-12,
+    )
+  })
+  it('clamps F into [0,1] at the support edges', () => {
+    const w2 = cramerVonMises([1, 2, 3, 4], (x) => x / 4) // u_(4)=1.0 stays in range
+    expect(Number.isFinite(w2)).toBe(true)
+    expect(w2).toBeGreaterThanOrEqual(0)
+  })
+  it('returns NaN for an empty sample', () => {
+    expect(Number.isNaN(cramerVonMises([], (x) => x))).toBe(true)
+  })
+  it('does not mutate the input array', () => {
+    const data = [3, 1, 2]
+    cramerVonMises(data, (x) => x / 3)
     expect(data).toEqual([3, 1, 2]) // original order preserved
   })
 })

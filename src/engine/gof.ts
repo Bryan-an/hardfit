@@ -41,3 +41,21 @@ export function adStatistic(data: readonly number[], cdf: (x: number) => number)
   }
   return Math.max(0, -n - s / n) // clamp tiny negative FP noise
 }
+
+/**
+ * Cramér–von Mises W² statistic against a fitted CDF (scipy's `n·ω²` normalization).
+ * Sorted u_i = clamp(F(x_(i)), [0,1]); W² = 1/(12n) + Σ_{i=0..n−1}(u_i − (2(i+1)−1)/(2n))².
+ * Like KS/AD, the raw statistic is a diagnostic when parameters are estimated from the same data.
+ */
+export function cramerVonMises(data: readonly number[], cdf: (x: number) => number): number {
+  const x = [...data].sort((a, b) => a - b) // copy; never mutate caller's array
+  const n = x.length
+  if (n === 0) return Number.NaN
+  let sum = 0
+  for (const [i, value] of x.entries()) {
+    const u = Math.min(1, Math.max(0, cdf(value))) // clamp F into [0,1]
+    const d = u - (2 * (i + 1) - 1) / (2 * n)
+    sum += d * d
+  }
+  return 1 / (12 * n) + sum
+}
