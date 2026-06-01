@@ -2,6 +2,7 @@ import digamma from '@stdlib/math-base-special-digamma'
 import trigamma from '@stdlib/math-base-special-trigamma'
 import cdf from '@stdlib/stats-base-dists-gamma-cdf'
 import logpdf from '@stdlib/stats-base-dists-gamma-logpdf'
+import quantile from '@stdlib/stats-base-dists-gamma-quantile'
 import { MAX_NEWTON_ITERATIONS, NEWTON_REL_TOL } from '../constants'
 import { mean, meanLog } from '../math'
 import { type Distribution, DistributionName, type FittedParams } from '../types'
@@ -36,6 +37,7 @@ export const gamma: Distribution = {
   name: DistributionName.Gamma,
   label: 'Gamma',
   k: 2,
+  kind: 'continuous',
   fit(data): GammaParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`gamma: need n >= ${MIN_SAMPLE_SIZE}`)
     if (data.some((v) => v <= 0)) throw new Error('gamma requires all x > 0')
@@ -66,5 +68,9 @@ export const gamma: Distribution = {
   cdf(x: number, p: FittedParams): number {
     const { shape, rate } = p as GammaParams
     return cdf(x, shape, rate) // beta = RATE, not scale
+  },
+  quantile(prob: number, p: FittedParams): number {
+    const { shape, rate } = p as GammaParams
+    return quantile(prob, shape, rate) // beta = RATE, same slot-trap as cdf
   },
 }

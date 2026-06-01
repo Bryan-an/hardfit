@@ -1,5 +1,6 @@
 import cdf from '@stdlib/stats-base-dists-lognormal-cdf'
 import logpdf from '@stdlib/stats-base-dists-lognormal-logpdf'
+import quantile from '@stdlib/stats-base-dists-lognormal-quantile'
 import { mean, populationVariance } from '../math'
 import { type Distribution, DistributionName, type FittedParams } from '../types'
 
@@ -28,6 +29,7 @@ export const lognormal: Distribution = {
   name: DistributionName.Lognormal,
   label: 'Lognormal',
   k: 2,
+  kind: 'continuous',
   fit(data): LognormalParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`lognormal: need n >= ${MIN_SAMPLE_SIZE}`)
     if (data.some((v) => v <= 0)) throw new Error('lognormal requires all x > 0')
@@ -46,5 +48,9 @@ export const lognormal: Distribution = {
   cdf(x: number, p: FittedParams): number {
     const { mu, sigma } = p as LognormalParams
     return cdf(x, mu, sigma)
+  },
+  quantile(prob: number, p: FittedParams): number {
+    const { mu, sigma } = p as LognormalParams
+    return quantile(prob, mu, sigma)
   },
 }

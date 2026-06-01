@@ -10,6 +10,11 @@ type WeibullParams = { shape: number; scale: number }
 
 const sample = [2.1, 3.4, 1.8, 5.2, 2.9, 4.1, 3.0, 2.5, 6.0, 3.7, 1.2, 4.8, 2.2, 3.9, 5.5]
 
+/** Probabilities the quantile↔cdf round-trip is checked at (away from the 0/1 tails). */
+const ROUND_TRIP_PROBS = [0.1, 0.5, 0.9]
+/** The probability at which a Weibull quantile equals its scale: F(scale) = 1 − 1/e. */
+const SCALE_PROB = 1 - Math.exp(-1)
+
 describe('weibull', () => {
   it('shape solves the score: 1/k + meanLn - (sum x^k ln x)/(sum x^k) = 0', () => {
     const p = weibull.fit(sample) as WeibullParams
@@ -36,6 +41,17 @@ describe('weibull', () => {
     const expected = Math.log(2) - Math.log(3) + (2 - 1) * Math.log(2 / 3) - (2 / 3) ** 2
     expectClose(weibull.logpdf(2, { shape: 2, scale: 3 }), expected, 1e-9)
   })
+  it('quantile passes SCALE (not rate): Q(1-1/e; shape=2,scale=3) = scale = 3', () => {
+    // CONVENTION GUARD: F(scale)=1-1/e, so the inverse at that prob must return the scale itself.
+    expectClose(weibull.quantile(SCALE_PROB, { shape: 2, scale: 3 }), 3, 1e-6)
+  })
+  it('quantile inverts cdf (round-trip)', () => {
+    const p = { shape: 2, scale: 3 }
+    for (const prob of ROUND_TRIP_PROBS) {
+      expectClose(weibull.cdf(weibull.quantile(prob, p), p), prob, 1e-7)
+    }
+  })
   it('rejects non-positive data', () => expect(() => weibull.fit([1, 0])).toThrow())
   it('k = 2', () => expect(weibull.k).toBe(2))
+  it("kind = 'continuous'", () => expect(weibull.kind).toBe('continuous'))
 })

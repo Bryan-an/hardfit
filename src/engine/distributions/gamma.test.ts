@@ -12,6 +12,11 @@ type GammaParams = { shape: number; scale: number; rate: number }
 
 const sample = [2.1, 3.4, 1.8, 5.2, 2.9, 4.1, 3.0, 2.5, 6.0, 3.7, 1.2, 4.8, 2.2, 3.9, 5.5]
 
+/** Probabilities the quantile↔cdf round-trip is checked at (away from the 0/1 tails). */
+const ROUND_TRIP_PROBS = [0.1, 0.5, 0.9]
+/** scipy gamma(a=3, scale=1/1.5).ppf(0.5) — verified via gamma.cdf(MEDIAN, p) ≈ 0.5. */
+const GAMMA_MEDIAN = 1.7827
+
 describe('gamma', () => {
   it('shape solves ln(k) - digamma(k) = ln(mean) - mean(ln x)', () => {
     const p = gamma.fit(sample) as GammaParams
@@ -44,6 +49,18 @@ describe('gamma', () => {
     }
     expect(ll(p)).toBeGreaterThanOrEqual(ll(worse) - 1e-6)
   })
+  it('quantile passes RATE (not scale): median of shape=3,rate=1.5 ~ 1.7827 (scale-swap gives ~4.01)', () => {
+    // CONVENTION GUARD: the rate/scale slot-swap is finite-but-wrong; the fixed reference catches it.
+    const p = { shape: 3, rate: 1.5, scale: 1 / 1.5 }
+    expectClose(gamma.quantile(0.5, p), GAMMA_MEDIAN, 1e-3)
+  })
+  it('quantile inverts cdf (round-trip)', () => {
+    const p = { shape: 3, rate: 1.5, scale: 1 / 1.5 }
+    for (const prob of ROUND_TRIP_PROBS) {
+      expectClose(gamma.cdf(gamma.quantile(prob, p), p), prob, 1e-7)
+    }
+  })
   it('rejects non-positive data', () => expect(() => gamma.fit([1, 0])).toThrow())
   it('k = 2', () => expect(gamma.k).toBe(2))
+  it("kind = 'continuous'", () => expect(gamma.kind).toBe('continuous'))
 })
