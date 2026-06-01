@@ -22,3 +22,26 @@ test('produces no console errors under the real CSP', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'HardFit' })).toBeVisible()
   expect(errors).toEqual([])
 })
+
+test('fits the sample dataset end-to-end and renders ranked table + chart', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  page.on('pageerror', (e) => errors.push(e.message))
+
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Load sample' }).click()
+
+  // worker computes; ranked table appears with all 5 distributions
+  await expect(page.getByRole('heading', { name: 'Ranked fits (by AICc)' })).toBeVisible({
+    timeout: 15_000,
+  })
+  for (const label of ['Normal', 'Lognormal', 'Exponential', 'Gamma', 'Weibull']) {
+    await expect(page.getByText(label, { exact: true })).toBeVisible()
+  }
+  // Plotly chart rendered
+  await expect(page.locator('.plotly').first()).toBeVisible()
+
+  expect(errors).toEqual([]) // no CSP violations / runtime errors (worker + Plotly under script-src 'self')
+})
