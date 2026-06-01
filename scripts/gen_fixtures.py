@@ -172,6 +172,26 @@ INVGAUSS_2_5_2000 = [
     round(float(v), 4) for v in stats.invgauss(2.0 / 5.0, loc=0, scale=5.0).rvs(size=2000, random_state=_IG_RNG)
 ]
 
+# --- M2.3 Batch D: Nakagami-m positive-support samples ----------------------
+#
+# Nakagami is positive-support (x > 0); its MLE reduces EXACTLY to the gamma shape MLE on x²
+# (Ω = mean(x²) closed; m via the 1-D Newton gamma.ts uses). It gets its OWN real nakagami draws
+# (the generic positive DATASETS are the wrong shape for gating a moderate-m fit). THE TRAP: scipy
+# uses nakagami(nu=m, loc=0, scale=√Ω) — Ω = scale² (squared). Generated ONCE from a SEEDED PCG64
+# stream and rounded to 4 decimals → byte-stable. Per the plan's fixture discipline: moderate m and
+# the project's moderate-n convention (n=25, n=2000). m and Ω are BOTH well-identified, so NO parity
+# skip-set entry is needed (unlike the F case, where scipy.f.fit under-converges).
+_NAKA_RNG = np.random.default_rng(20260601)
+# n=25, Nakagami(m=1.5, Omega=4 ⇒ scale=2): a small moderate-fading sample.
+NAKAGAMI_1_5_4_25 = [
+    round(float(v), 4) for v in stats.nakagami(1.5, loc=0, scale=2.0).rvs(size=25, random_state=_NAKA_RNG)
+]
+# n=2000, Nakagami(m=3, Omega=9 ⇒ scale=3): a large lighter-fading sample; exercises the 399-edge
+# equiprobable chi-square at scale (the Gamma-on-x² quantile ↔ scipy.ppf cross-oracle).
+NAKAGAMI_3_9_2000 = [
+    round(float(v), 4) for v in stats.nakagami(3.0, loc=0, scale=3.0).rvs(size=2000, random_state=_NAKA_RNG)
+]
+
 # --- M2.3 Batch C: integer COUNT datasets (the continuous datasets are out-of-support for discrete
 # fits — non-integer values make logPMF -> -inf). Each discrete family gets count data on its own
 # support; values are stored as ints so the engine and the discrete chi-square round-trip them.
@@ -212,6 +232,10 @@ def datasets_for(dist_name: str) -> dict[str, list[float]]:
         # Real invgauss draws (Batch D); positive-support. The n=2000 set stresses the bisection
         # quantile's geometric bracket at the 399 equiprobable edges (its only scipy cross-oracle).
         return {"invgauss_1_5_2_25": INVGAUSS_1_5_2_25, "invgauss_2_5_2000": INVGAUSS_2_5_2000}
+    if dist_name == "nakagami":
+        # Real nakagami draws (Batch D); positive-support, moderate m. The n=2000 set exercises the
+        # Gamma-on-x² quantile at the 399 equiprobable chi-square edges (its scipy.ppf cross-oracle).
+        return {"nakagami_1_5_4_25": NAKAGAMI_1_5_4_25, "nakagami_3_9_2000": NAKAGAMI_3_9_2000}
     if dist_name in REAL_SUPPORT_FAMILIES:
         return {**DATASETS, "signed_26": SIGNED_26}
     return DATASETS
@@ -1076,6 +1100,31 @@ def build_inverse_gaussian(data: list[float]) -> dict:
     }
 
 
+def build_nakagami(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # scipy.stats.nakagami(nu, loc, scale); PIN floc=0 so it is the standard two-parameter Nakagami.
+    # fit -> (nu, 0, scale). HardFit m = nu, Omega = scale² (THE TRAP — scipy's scale multiplies x,
+    # Ω is a SECOND-moment quantity; forgetting to square the scale makes Ω off by a √).
+    nu, _loc, scale = stats.nakagami.fit(arr, floc=0)
+    rv = stats.nakagami(nu, loc=0, scale=scale)
+    fixed = {"m": float(nu), "Omega": float(scale**2)}
+    # Mode A: iterative fit (m via the gamma-on-x² 1-D Newton, Ω = mean(x²) closed) -> gate on
+    # log-likelihood (HardFit must reach >= scipy's). m and Ω are BOTH well-identified, so the loose
+    # param diagnostic also holds (no parity skip-set entry needed, unlike fisher-f).
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"m": float(nu), "Omega": float(scale**2)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
@@ -1108,6 +1157,7 @@ BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "student-t": build_student_t,
     "fisher-f": build_fisher_f,
     "inverse-gaussian": build_inverse_gaussian,
+    "nakagami": build_nakagami,
 }
 
 

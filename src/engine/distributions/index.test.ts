@@ -33,6 +33,7 @@ describe('DISTRIBUTIONS registry', () => {
       DistributionName.StudentT,
       DistributionName.FisherF,
       DistributionName.InverseGaussian,
+      DistributionName.Nakagami,
     ])
     expect(new Set(names).size).toBe(names.length)
   })

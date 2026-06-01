@@ -66,6 +66,7 @@ type DiscreteUniformParams = { a: number; b: number }
 type StudentTParams = { loc: number; scale: number; df: number } // standard t wrapped by loc+scale
 type FisherFParams = { d1: number; d2: number } // d1 = numerator df, d2 = denominator df
 type InverseGaussianParams = { mu: number; lambda: number } // mu = mean, lambda = shape (Wald)
+type NakagamiParams = { m: number; Omega: number } // m = shape, Omega = spread; x² ~ Gamma(m, RATE=m/Ω)
 
 /** Fréchet's location is fixed at 0 in HardFit (a 2-parameter Fréchet); the sampler's 3rd
  *  positional arg is that location `m`. Named to avoid a bare 0 literal in the factory call. */
@@ -239,6 +240,14 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
             Math.sqrt(IG_TRANSFORM_RADICAND_COEFF * mu * lambda * y + mu * mu * y * y)
         return drawUniform() <= mu / (mu + x) ? x : (mu * mu) / x
       }
+    }
+    case DistributionName.Nakagami: {
+      const { m, Omega } = p as NakagamiParams
+      // X ~ Nakagami(m, Ω) ⇔ X² ~ Gamma(shape=m, scale=Ω/m), so draw the squared variate from the
+      // gamma factory and take its √. @stdlib gamma takes shape + RATE, and the rate is m/Ω (the
+      // INVERSE of the natural scale Ω/m) — the SAME slot-trap as gamma.ts / nakagami.ts cdf.
+      const drawSquared = gammaSampler.factory(m, m / Omega, { seed }) // shape=m, RATE=m/Ω (not scale)
+      return () => Math.sqrt(drawSquared())
     }
     default:
       throw new Error(`makeSampler: no sampler for '${name}'`)

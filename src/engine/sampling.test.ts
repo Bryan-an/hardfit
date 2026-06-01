@@ -197,6 +197,17 @@ describe('makeSampler: Batch D sampler↔quantile convention guards', () => {
     const expVar = (mu * mu * mu) / lambda
     expect(Math.abs(populationVariance(s) - expVar)).toBeLessThanOrEqual(IG_MOMENT_RTOL * expVar)
   })
+  // Nakagami draws √(Gamma) on the squared scale, so its DEFINING moment is E[x²] = Ω. A rate/scale
+  // swap in the gamma factory (passing Ω/m instead of RATE=m/Ω) would shift mean(x²) far off Ω; the
+  // sampler↔quantile cross-check below ALSO catches a swap (median/IQR diverge), belt-and-suspenders.
+  it('nakagami(m, Omega) — √Gamma sampler: mean(x²) ≈ Omega (catches a rate/scale swap)', () => {
+    const m = 1.5
+    const Omega = 4
+    const s = drawSample(makeSampler(DistributionName.Nakagami, { m, Omega }, SEED), SAMPLE_SIZE)
+    expectNear(mean(s.map((x) => x * x)), Omega)
+  })
+  it('nakagami(m, Omega) — sampler↔quantile median/IQR convention guard', () =>
+    expectSamplerMatchesQuantile(DistributionName.Nakagami, { m: 1.5, Omega: 4 }))
 })
 
 describe('makeSampler: reproducibility + guards', () => {

@@ -18,6 +18,7 @@ import { laplace } from './laplace'
 import { levy } from './levy'
 import { logistic } from './logistic'
 import { lognormal } from './lognormal'
+import { nakagami } from './nakagami'
 import { negativeBinomial } from './negative-binomial'
 import { normal } from './normal'
 import { pareto } from './pareto'
@@ -60,4 +61,6 @@ export const DISTRIBUTIONS: readonly Distribution[] = [
   fisherF,
   // Inverse Gaussian has a CLOSED-FORM MLE (no optimizer) but ships with Batch D.
   inverseGaussian,
+  // Nakagami reduces to the Gamma MLE on x² (reuses gamma's 1-D Newton; no optimizer).
+  nakagami,
 ]

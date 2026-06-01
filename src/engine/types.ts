@@ -32,6 +32,7 @@ export const DistributionName = {
   StudentT: 'student-t',
   FisherF: 'fisher-f',
   InverseGaussian: 'inverse-gaussian',
+  Nakagami: 'nakagami',
 } as const
 export type DistributionName = (typeof DistributionName)[keyof typeof DistributionName]
 
