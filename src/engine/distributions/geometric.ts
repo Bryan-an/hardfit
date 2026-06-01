@@ -50,6 +50,10 @@ export const geometric: Distribution = {
   },
   logpdf(x: number, params: FittedParams): number {
     const { p } = params as GeometricParams
+    // p === 1 is the all-zeros MLE (a point mass at 0): log P(X=0) = 0, log P(X>0) = -inf. @stdlib's
+    // logpmf(0, 1) is NaN here (0·ln(1−p) = 0·−inf), which would make the LL NaN and silently drop
+    // a PERFECT fit; scipy returns 0.0. Special-case it so the point mass scores finitely.
+    if (p === 1) return x === 0 ? 0 : Number.NEGATIVE_INFINITY
     return logpmf(x, p)
   },
   cdf(x: number, params: FittedParams): number {

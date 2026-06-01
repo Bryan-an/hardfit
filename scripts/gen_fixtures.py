@@ -267,6 +267,7 @@ def aicc_or_sentinel(log_lik_value: float, k: int, n: int) -> float | str:
 # cells + observed + expected so any divergence fails loudly.
 
 MAX_DISCRETE_SCAN = 100_000  # mirrors gof.ts; defensive cap (the tail -> 0 guarantees termination)
+EXPECTED_EPS = 1e-9  # mirrors gof.ts: slack so an E exactly at MIN merges the same way TS-vs-Python
 
 
 def chi_squared_binning_discrete(
@@ -294,9 +295,10 @@ def chi_squared_binning_discrete(
     while v <= support_max and v < support_min + MAX_DISCRETE_SCAN:
         acc_expected += n * pmf(v)
         remaining_tail = n * (1 - cdf(v))  # expected mass strictly above v
-        if remaining_tail < MIN_EXPECTED_PER_BIN or v >= support_max:
+        # -EXPECTED_EPS: mirror gof.ts so an E exactly at MIN merges identically TS-vs-Python.
+        if remaining_tail < MIN_EXPECTED_PER_BIN - EXPECTED_EPS or v >= support_max:
             break
-        if acc_expected >= MIN_EXPECTED_PER_BIN:
+        if acc_expected >= MIN_EXPECTED_PER_BIN - EXPECTED_EPS:
             cells.append(
                 {
                     "lo": open_lo,

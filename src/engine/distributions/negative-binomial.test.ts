@@ -63,6 +63,24 @@ describe('negative-binomial', () => {
   it('fit throws on underdispersed data (no finite MLE)', () => {
     expect(() => negativeBinomial.fit(UNDERDISPERSED)).toThrow(/overdispersed/)
   })
+  it('fit never returns a degenerate Poisson-limit point on extreme data (finite-LL guard)', () => {
+    // Nine zeros + one huge outlier: technically overdispersed, but a runaway Newton false-converges
+    // to an enormous r (p→1, a point mass at 0) whose LL is -Infinity on the 1000. fit() must either
+    // return a USABLE finite-LL fit or throw — never a silent degenerate point.
+    const extreme = [0, 0, 0, 0, 0, 0, 0, 0, 0, 1000]
+    let threw = false
+    let params: NegativeBinomialParams | undefined
+    try {
+      params = negativeBinomial.fit(extreme) as NegativeBinomialParams
+    } catch {
+      threw = true
+    }
+    if (!threw && params) {
+      const ll = extreme.reduce((acc, x) => acc + negativeBinomial.logpdf(x, params), 0)
+      expect(Number.isFinite(ll)).toBe(true)
+      expect(params.p).toBeLessThan(1)
+    }
+  })
   it('fit throws on non-integer data', () => {
     expect(() => negativeBinomial.fit([0, 1, 2.5, 5, 8])).toThrow(/integer/)
   })

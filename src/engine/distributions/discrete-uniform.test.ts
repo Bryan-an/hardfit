@@ -20,8 +20,9 @@ describe('discreteUniform', () => {
   it('logpdf delegates to @stdlib logpmf: matches the elementary closed-form log-PMF', () => {
     // CONVENTION GUARD: discrete-uniform PMF is uniform over the n = b-a+1 support integers,
     // so logpmf(x, a, b) = -ln(b - a + 1) for x in {a..b}. Written by hand (NOT via @stdlib)
-    // with ASYMMETRIC endpoints a=1, b=6 to catch an a/b arg-slot swap (a swap yields
-    // b-a+1 <= 0 -> -Infinity). For x=3 in {1..6}: logpmf = -ln(6).
+    // with ASYMMETRIC endpoints a=1, b=6 to catch an a/b arg-slot swap (a swap makes a>b, so
+    // @stdlib's logpmf returns NaN via its a>b guard; expectClose(NaN, -ln 6) then fails).
+    // For x=3 in {1..6}: logpmf = -ln(6).
     expectClose(discreteUniform.logpdf(3, { a: 1, b: 6 }), -Math.log(6), 1e-9)
   })
   it('cdf within support: F(3; a=1, b=6) = (3-1+1)/6 = 1/2', () => {

@@ -87,6 +87,15 @@ export const negativeBinomial: Distribution = {
     }
     if (!converged) throw new Error('negative-binomial: failed to converge')
     const p = r / (r + xbar)
+    // Reject the Poisson-limit collapse: on extreme data a runaway Newton can satisfy the
+    // scale-relative step test at an enormous r where p → 1 and the fit degenerates to a point mass
+    // at 0 (log-likelihood −Infinity on any positive count). Require a finite total log-likelihood
+    // so fit() never returns an unusable point — fitAll/bootstrap then treat it as a clean failure.
+    let totalLogLik = 0
+    for (const x of data) totalLogLik += logpmf(x, r, p)
+    if (!Number.isFinite(totalLogLik)) {
+      throw new Error('negative-binomial: no finite MLE (data too extreme)')
+    }
     return { r, p }
   },
   logpdf(x: number, p: FittedParams): number {

@@ -280,8 +280,18 @@ export async function bootstrapFit(
     }
   }
 
-  // 4. Jackknife for BCa acceleration (skipped above the cap → percentile fallback).
-  const jt = n <= BCA_JACKKNIFE_MAX_N ? jackknife(dist, data) : undefined
+  // 4. Jackknife for BCa acceleration (skipped above the cap → percentile fallback). A leave-one-out
+  //    refit can throw for a boundary/conditional fit (e.g. a negative-binomial subset that is no
+  //    longer overdispersed), so guard it: on failure fall back to percentile CIs rather than
+  //    discarding the whole fit's intervals.
+  let jt: Record<string, number[]> | undefined
+  if (n <= BCA_JACKKNIFE_MAX_N) {
+    try {
+      jt = jackknife(dist, data)
+    } catch {
+      jt = undefined
+    }
+  }
 
   const paramCIs: Record<string, ParamCI> = {}
   for (const [key, point] of Object.entries(fittedParams)) {

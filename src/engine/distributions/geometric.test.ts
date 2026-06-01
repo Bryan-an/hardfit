@@ -33,9 +33,13 @@ describe('geometric', () => {
     expect(Number.isInteger(q)).toBe(true)
     expect(geometric.cdf(q, par)).toBeGreaterThanOrEqual(0.5)
   })
-  it('all-zeros is the valid boundary p = 1 (no throw)', () => {
+  it('all-zeros is the valid boundary p = 1 with a USABLE (finite) point-mass fit', () => {
     const par = geometric.fit([0, 0, 0, 0]) as GeometricParams
     expect(par.p).toBe(1)
+    // The p=1 point mass must score finitely (NOT NaN from @stdlib's logpmf(0,1)) or fitAll would
+    // silently drop a perfect fit. log P(X=0)=0, log P(X>0)=-inf.
+    expect(geometric.logpdf(0, par)).toBe(0)
+    expect(geometric.logpdf(1, par)).toBe(Number.NEGATIVE_INFINITY)
   })
   it('rejects non-integer data', () => expect(() => geometric.fit([0.5, 1, 2])).toThrow())
   it('rejects negative data (support violation)', () =>

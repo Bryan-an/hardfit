@@ -68,6 +68,10 @@ const MIN_EXPECTED_PER_BIN = 5
  *  decreases to 0, so the scan always terminates by dropping below MIN_EXPECTED_PER_BIN; this only
  *  guards a pathological cdf that never reaches 1. Far above any realistic count support. */
 const MAX_DISCRETE_SCAN = 100_000
+/** Absolute slack on the discrete E≥MIN cell-merge threshold so a last-digit difference between
+ *  @stdlib (engine) and scipy (gen_fixtures.py oracle) on an expected count sitting exactly at
+ *  MIN_EXPECTED_PER_BIN cannot flip the merge decision and diverge the two binnings. */
+const EXPECTED_EPS = 1e-9
 
 /**
  * Pearson chi-squared GoF for a CONTINUOUS fit using equiprobable bins from the fitted quantile.
@@ -161,9 +165,13 @@ export function chiSquaredGofDiscrete(
     accExpected += n * pmf(v)
     const remainingTail = n * (1 - cdf(v)) // expected mass strictly above v
     // Fold the open cell + all remaining mass into the final cell when the tail can no longer
-    // sustain its own minimum-expected cell, or the (finite) support ends at v.
-    if (remainingTail < MIN_EXPECTED_PER_BIN || v >= supportMax) break
-    if (accExpected >= MIN_EXPECTED_PER_BIN) {
+    // sustain its own minimum-expected cell, or the (finite) support ends at v. The −EXPECTED_EPS
+    // makes the threshold comparison robust to a last-digit difference between @stdlib (here) and
+    // scipy (gen_fixtures.py): an expected sitting exactly on MIN_EXPECTED_PER_BIN must merge the
+    // same way in both, or the binning — and the parity gate — would diverge (the byte-for-byte
+    // invariant). Mirrored exactly in chi_squared_binning_discrete.
+    if (remainingTail < MIN_EXPECTED_PER_BIN - EXPECTED_EPS || v >= supportMax) break
+    if (accExpected >= MIN_EXPECTED_PER_BIN - EXPECTED_EPS) {
       cells.push({ lo: openLo, hi: v, observed: countIn(openLo, v), expected: accExpected })
       openLo = v + 1
       accExpected = 0
