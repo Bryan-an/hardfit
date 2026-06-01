@@ -7,8 +7,8 @@ Client-side, stateless (no server/DB/accounts), bilingual (EN/ES) distribution-f
 - Commands: `pnpm dev|build|typecheck|check|test|e2e`, and `pnpm run licenses` (bare `pnpm licenses` is a built-in subcommand).
 
 ## Supply-chain rules (non-negotiable)
-- Dependency install scripts are blocked by default (`pnpm-workspace.yaml` → `strictDepBuilds: true` + `onlyBuiltDependencies`). Never blanket-allow; review each.
-- `minimumReleaseAge: 1440` cooldown; exact version pins (`save-exact`); commit the lockfile; CI uses `--frozen-lockfile`.
+- Dependency install scripts are blocked by default (`pnpm-workspace.yaml` → `strictDepBuilds: true` + `allowBuilds` map; pnpm 11 removed `onlyBuiltDependencies`). Never blanket-allow; review each.
+- `minimumReleaseAge: 1440` cooldown; exact version pins (`saveExact`, set in `pnpm-workspace.yaml` since `.npmrc` is auth/registry-only in pnpm 11); commit the lockfile; CI uses `--frozen-lockfile`.
 - Build-time-only tooling (Tailwind, Vite plugins) stays in devDependencies. Vendor critical libs; no runtime CDNs (would break the CSP). Pin GitHub Actions by SHA.
 
 ## Architecture invariants (apply from M1 on)
