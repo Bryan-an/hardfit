@@ -78,6 +78,11 @@ describe('cauchy', () => {
   })
   it('rejects degenerate (zero-spread) data', () =>
     expect(() => cauchy.fit([7, 7, 7, 7])).toThrow())
+  it('rejects an off-center majority tie the IQR guard misses (MLE unbounded)', () =>
+    // Four of six values identical but NOT centered: the half-IQR is > 0 (so the IQR guard alone
+    // passes), yet the Cauchy MLE is unbounded (gamma -> 0, LL -> +inf). Without the modal-
+    // concentration guard, fit() would return a near-degenerate tiny-gamma fit that ranks #1.
+    expect(() => cauchy.fit([1, 1, 1, 1, 5, 9])).toThrow(/majority/))
   it('k = 2', () => expect(cauchy.k).toBe(2))
   it("kind = 'continuous'", () => expect(cauchy.kind).toBe('continuous'))
 })

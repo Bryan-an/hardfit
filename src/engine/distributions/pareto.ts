@@ -40,11 +40,18 @@ export const pareto: Distribution = {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`pareto: need n >= ${MIN_SAMPLE_SIZE}`)
     if (data.some((v) => v <= 0)) throw new Error('pareto requires all x > 0')
     // Closed-form MLE: xm = min(x); s = sum ln(x/xm); alpha = n / s.
-    const xm = Math.min(...data)
+    // Single pass for the minimum (NOT Math.min(...data) — stack overflow on large arrays).
+    let xm = data[0] ?? Number.NaN
+    for (const x of data) if (x < xm) xm = x
     let s = 0
     for (const x of data) s += Math.log(x / xm)
     if (!(s > 0)) throw new Error('pareto: degenerate (all values equal)')
     const alpha = data.length / s
+    // A non-finite datum (e.g. +Infinity passes the v<=0 check) drives s -> Infinity and alpha -> 0;
+    // require a finite, positive shape so fit() rejects it rather than returning a degenerate alpha.
+    if (!(Number.isFinite(alpha) && alpha > 0)) {
+      throw new Error('pareto: degenerate or non-finite shape')
+    }
     return { shape: alpha, scale: xm }
   },
   logpdf(x: number, p: FittedParams): number {

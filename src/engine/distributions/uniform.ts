@@ -34,9 +34,19 @@ export const uniform: Distribution = {
   kind: 'continuous',
   fit(data): UniformParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`uniform: need n >= ${MIN_SAMPLE_SIZE}`)
-    const a = Math.min(...data)
-    const b = Math.max(...data)
-    if (!(b > a)) throw new Error('uniform: degenerate (max <= min, zero width)')
+    // Single pass for the support bounds. NOT Math.min/max(...data): argument spread overflows the
+    // call stack on large arrays (RangeError at ~100k+); the sibling distributions use this loop.
+    let a = data[0] ?? Number.NaN
+    let b = a
+    for (const x of data) {
+      if (x < a) a = x
+      if (x > b) b = x
+    }
+    // Require finite bounds with positive width: catches all-equal data, NaN inputs, AND a ±Infinity
+    // bound (Infinity > a is true, so the bare `b > a` check would let a degenerate fit through).
+    if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
+      throw new Error('uniform: degenerate or non-finite support (need finite max > min)')
+    }
     return { a, b }
   },
   logpdf(x: number, p: FittedParams): number {

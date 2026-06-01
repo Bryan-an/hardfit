@@ -105,6 +105,21 @@ export const cauchy: Distribution = {
   kind: 'continuous',
   fit(data): CauchyParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`cauchy: need n >= ${MIN_SAMPLE_SIZE}`)
+    // The Cauchy MLE is UNBOUNDED (gamma -> 0, log-likelihood -> +infinity) when a STRICT majority
+    // of the points share one exact value: those points pin the location there while the scale
+    // collapses, and the LL rises without limit. The IQR seed below only catches such a tie when it
+    // straddles both quartiles, so detect modal concentration directly — otherwise fit() returns a
+    // near-degenerate tiny-gamma result whose large-but-finite LL would spuriously rank it best.
+    const counts = new Map<number, number>()
+    let maxCount = 0
+    for (const x of data) {
+      const c = (counts.get(x) ?? 0) + 1
+      counts.set(x, c)
+      if (c > maxCount) maxCount = c
+    }
+    if (maxCount * 2 > data.length) {
+      throw new Error('cauchy: degenerate (a majority of values are identical; MLE unbounded)')
+    }
     const sorted = [...data].sort((a, b) => a - b)
     const median = sortedQuantile(sorted, MEDIAN_PROB)
     const q1 = sortedQuantile(sorted, Q1_PROB)
