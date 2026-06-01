@@ -1,3 +1,5 @@
+import chi2cdf from '@stdlib/stats-base-dists-chisquare-cdf'
+
 /**
  * One-sample Kolmogorov–Smirnov statistic D = max(D+, D-) against a fitted CDF.
  * NOTE: with parameters estimated from the same data, the standard KS p-value is INVALID
@@ -58,4 +60,48 @@ export function cramerVonMises(data: readonly number[], cdf: (x: number) => numb
     sum += d * d
   }
   return 1 / (12 * n) + sum
+}
+
+/** Min expected count per equiprobable chi-square bin; k is chosen so E_j = n/k ≥ this. */
+const MIN_EXPECTED_PER_BIN = 5
+
+/**
+ * Pearson chi-squared GoF for a CONTINUOUS fit using equiprobable bins from the fitted quantile.
+ * Bin edges are the fitted quantiles Q(j/k) for j=1..k−1, with k = max(2, ⌊n/MIN_EXPECTED_PER_BIN⌋)
+ * so the expected count per bin E_j = n/k ≥ MIN_EXPECTED_PER_BIN. Equiprobable quantile bins make
+ * the test bounded-support-safe automatically: every edge is a real quantile, never out of range.
+ * Binning is strict (x > edge), so a point landing exactly on an edge falls into the lower bin.
+ *   X² = Σ_j (O_j − E_j)² / E_j;  df = k − 1 − nParams;  p = 1 − χ²cdf(X², df).
+ * NOTE (Chernoff–Lehmann): like KS (Lilliefors) and AD, with parameters estimated from the same
+ * data the χ²(k−1−p) reference distribution is anti-conservative for raw-data MLE (binned vs raw
+ * estimation), so this p-value is APPROXIMATE. The rigorous p-value is the bootstrap (M2.2).
+ */
+export function chiSquaredGof(
+  data: readonly number[],
+  quantile: (prob: number) => number, // Q(p; θ̂) in data scale
+  nParams: number,
+): { statistic: number; df: number; bins: number; pValue: number } {
+  const n = data.length
+  const k = Math.max(2, Math.floor(n / MIN_EXPECTED_PER_BIN)) // equiprobable: E_j = n/k ≥ min
+  const edges: number[] = []
+  for (let j = 1; j < k; j++) edges.push(quantile(j / k))
+  const observed = new Array<number>(k).fill(0)
+  for (const x of data) {
+    let b = 0
+    for (const edge of edges) {
+      if (x > edge) b++
+      else break // edges are sorted ascending; first non-exceeded edge fixes the bin
+    }
+    const count = observed[b]
+    if (count !== undefined) observed[b] = count + 1
+  }
+  const expected = n / k
+  let statistic = 0
+  for (const o of observed) {
+    const d = o - expected
+    statistic += (d * d) / expected
+  }
+  const df = k - 1 - nParams
+  const pValue = df >= 1 ? 1 - chi2cdf(statistic, df) : Number.NaN
+  return { statistic, df, bins: k, pValue }
 }
