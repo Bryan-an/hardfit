@@ -10,11 +10,12 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "check": "biome check .",
-    "preview": "vite preview",
+    "preview": "pnpm run build && wrangler dev",
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "licenses": "license-checker-rseidelsohn --production --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;BlueOak-1.0.0;CC0-1.0;Unlicense;Python-2.0;BSL-1.0' --excludePrivatePackages"
+    "licenses": "license-checker-rseidelsohn --production --onlyAllow 'MIT;ISC;Apache-2.0;BSD-2-Clause;BSD-3-Clause;0BSD;BlueOak-1.0.0;CC0-1.0;Unlicense;Python-2.0;BSL-1.0' --excludePrivatePackages",
+    "deploy": "pnpm run build && wrangler deploy"
   },
   "dependencies": {
     "react": "19.2.6",
@@ -23,8 +24,9 @@
   "devDependencies": {
     "@axe-core/playwright": "4.11.3",
     "@biomejs/biome": "2.4.16",
-    "@tailwindcss/vite": "4.3.0",
+    "@cloudflare/vite-plugin": "1.39.0",
     "@playwright/test": "1.60.0",
+    "@tailwindcss/vite": "4.3.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
