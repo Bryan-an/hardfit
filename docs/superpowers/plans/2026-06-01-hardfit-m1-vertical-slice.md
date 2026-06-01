@@ -970,10 +970,10 @@ describe('fitAll', () => {
     }
   })
   it('reports failures (not crashes) when a distribution rejects the data', () => {
-    const withNeg = [-1, 2, 3, 4, 5, 6] // lognormal/gamma/weibull need x>0
+    const withNeg = [-1, 2, 3, 4, 5, 6] // exponential needs x>=0; lognormal/gamma/weibull need x>0
     const res = fitAll(withNeg)
     const failed = res.failures.map((f) => f.name).sort()
-    expect(failed).toEqual(['gamma', 'lognormal', 'weibull'])
+    expect(failed).toEqual(['exponential', 'gamma', 'lognormal', 'weibull'])
     expect(res.ranked.some((r) => r.name === 'normal')).toBe(true)
   })
   it('throws on too-small samples', () => expect(() => fitAll([1, 2])).toThrow())
