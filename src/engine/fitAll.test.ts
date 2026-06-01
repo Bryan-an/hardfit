@@ -8,13 +8,13 @@ const sample = [
 ]
 
 describe('fitAll', () => {
-  it('fits 21 of 26 distributions on continuous positive data, ranks by AICc, weights sum to 1', () => {
+  it('fits 22 of 27 distributions on continuous positive data, ranks by AICc, weights sum to 1', () => {
     const res = fitAll(sample)
     expect(res.n).toBe(sample.length)
     // This sample is continuous (non-integer) and > 1. Beta needs 0 < x < 1, and the 4 discrete
-    // families reject the non-integer values — so 5 fail and the other 21 rank (incl. Student-t and
-    // Fisher–Snedecor F, both of which accept this positive continuous data).
-    expect(res.ranked.length).toBe(21)
+    // families reject the non-integer values — so 5 fail and the other 22 rank (incl. Student-t,
+    // Fisher–Snedecor F, and Inverse Gaussian, all of which accept this positive continuous data).
+    expect(res.ranked.length).toBe(22)
     expect(res.failures.map((f) => f.name).sort()).toEqual(
       [
         DistributionName.Beta,
@@ -52,10 +52,11 @@ describe('fitAll', () => {
   it('reports failures (not crashes) when a distribution rejects the data', () => {
     const withNeg = [-1, 2, 3, 4, 5, 6] // integers, one negative
     // Positive-support families reject the negative value: lognormal/gamma/weibull/pareto/frechet/
-    // levy/chisquare/chi/invgamma/betaprime/fisher-f need x > 0, exponential/rayleigh need x >= 0,
-    // beta needs 0 < x < 1, and the discrete poisson/geometric/negative-binomial need x >= 0. The
-    // real-support families (normal/uniform/laplace/logistic/gumbel/cauchy/cosine/student-t) survive
-    // — AS DOES discrete uniform, whose support is any contiguous integer range (here {-1,…,6}).
+    // levy/chisquare/chi/invgamma/betaprime/fisher-f/inverse-gaussian need x > 0, exponential/rayleigh
+    // need x >= 0, beta needs 0 < x < 1, and the discrete poisson/geometric/negative-binomial need
+    // x >= 0. The real-support families (normal/uniform/laplace/logistic/gumbel/cauchy/cosine/
+    // student-t) survive — AS DOES discrete uniform, whose support is any contiguous integer range
+    // (here {-1,…,6}).
     const res = fitAll(withNeg)
     const failed = res.failures.map((f) => f.name).sort()
     expect(failed).toEqual(
@@ -69,6 +70,7 @@ describe('fitAll', () => {
         DistributionName.Frechet,
         DistributionName.Gamma,
         DistributionName.Geometric,
+        DistributionName.InverseGaussian,
         DistributionName.InvGamma,
         DistributionName.Levy,
         DistributionName.Lognormal,

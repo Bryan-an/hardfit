@@ -152,6 +152,26 @@ FISHER_F5_12_25 = [round(float(v), 4) for v in stats.f(5, 12).rvs(size=25, rando
 # at scale (verified: @stdlib f-quantile ↔ scipy.ppf to ~1e-15).
 FISHER_F10_20_2000 = [round(float(v), 4) for v in stats.f(10, 20).rvs(size=2000, random_state=_F_RNG)]
 
+# --- M2.3 Batch D: Inverse Gaussian (Wald) positive-support samples ---------
+#
+# Inverse Gaussian is positive-support (x > 0) with a CLOSED-FORM MLE, so it gets its OWN real
+# invgauss draws (the generic positive DATASETS are the wrong shape and — crucially — too small to
+# stress the bisection quantile). THE TRAP: scipy uses invgauss(mu_s=mu/lambda, loc=0, scale=lambda),
+# NOT mu directly. Generated ONCE from a SEEDED PCG64 stream and rounded to 4 decimals → byte-stable.
+# The n=2000 set is LOAD-BEARING: its 399 equiprobable chi-square edges (out to Q(0.9975)) are the
+# ONLY cross-oracle for the engine's geometric-bracket bisection quantile (the unit tests only check
+# self-consistency cdf(quantile(p))≈p); a tail/bracket bug surfaces here against scipy.ppf to ~1e-9.
+_IG_RNG = np.random.default_rng(20260601)
+# n=25, IG(mu=1.5, lambda=2): a small skewed sample (small lambda → heavy right tail).
+INVGAUSS_1_5_2_25 = [
+    round(float(v), 4) for v in stats.invgauss(1.5 / 2.0, loc=0, scale=2.0).rvs(size=25, random_state=_IG_RNG)
+]
+# n=2000, IG(mu=2, lambda=5): a large sample that stresses the bisection's geometric bracket out to
+# the deep upper tail (Q(0.9975)); verified the closed-form MLE == scipy.invgauss.fit remap to ~1e-9.
+INVGAUSS_2_5_2000 = [
+    round(float(v), 4) for v in stats.invgauss(2.0 / 5.0, loc=0, scale=5.0).rvs(size=2000, random_state=_IG_RNG)
+]
+
 # --- M2.3 Batch C: integer COUNT datasets (the continuous datasets are out-of-support for discrete
 # fits — non-integer values make logPMF -> -inf). Each discrete family gets count data on its own
 # support; values are stored as ints so the engine and the discrete chi-square round-trip them.
@@ -188,6 +208,10 @@ def datasets_for(dist_name: str) -> dict[str, list[float]]:
     if dist_name == "fisher-f":
         # Real F(d1, d2) draws (Batch D); positive-support, moderate df.
         return {"fisher_f5_12_25": FISHER_F5_12_25, "fisher_f10_20_2000": FISHER_F10_20_2000}
+    if dist_name == "inverse-gaussian":
+        # Real invgauss draws (Batch D); positive-support. The n=2000 set stresses the bisection
+        # quantile's geometric bracket at the 399 equiprobable edges (its only scipy cross-oracle).
+        return {"invgauss_1_5_2_25": INVGAUSS_1_5_2_25, "invgauss_2_5_2000": INVGAUSS_2_5_2000}
     if dist_name in REAL_SUPPORT_FAMILIES:
         return {**DATASETS, "signed_26": SIGNED_26}
     return DATASETS
@@ -1021,6 +1045,37 @@ def build_fisher_f(data: list[float]) -> dict:
     }
 
 
+def build_inverse_gaussian(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # CLOSED-FORM MLE (emitted directly, levy-style — NOT scipy.fit's params): mu = sample mean,
+    # lambda = n / (Σ(1/x) − n/mu). Emitting the closed form makes the 1e-9 param gate independent of
+    # scipy.fit's convergence.
+    mu = float(np.mean(arr))
+    lam = float(n / (np.sum(1.0 / arr) - n / mu))
+    # THE TRAP: scipy.stats.invgauss uses (mu_s = mu/lambda, loc=0, scale=lambda) — NOT mu directly.
+    rv = stats.invgauss(mu / lam, loc=0, scale=lam)
+    fixed = {"mu": mu, "lambda": lam}
+    # Independent LL floor from scipy's OWN optimizer (preserves the formula-independence of the LL
+    # gate): invgauss.fit(x, floc=0) -> (mu_s, 0, scale) ⇒ HardFit lambda = scale, mu = mu_s·scale.
+    mu_s_fit, _loc_fit, scale_fit = stats.invgauss.fit(arr, floc=0)
+    ll = log_lik(data, stats.invgauss(mu_s_fit, loc=0, scale=scale_fit))
+    # Cross-check the closed form against scipy's independent fit (VERIFIED equal to ~1e-9): a bug in
+    # either route fails this loudly at generation time, before it can reach the committed JSON.
+    assert abs(mu - mu_s_fit * scale_fit) < 1e-6 * max(1.0, abs(mu)), "IG mu mismatch vs scipy.fit"
+    assert abs(lam - scale_fit) < 1e-6 * max(1.0, abs(lam)), "IG lambda mismatch vs scipy.fit"
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"mu": mu, "lambda": lam},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
@@ -1052,6 +1107,7 @@ BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     # M2.3 Batch D (multi-parameter MLE)
     "student-t": build_student_t,
     "fisher-f": build_fisher_f,
+    "inverse-gaussian": build_inverse_gaussian,
 }
 
 

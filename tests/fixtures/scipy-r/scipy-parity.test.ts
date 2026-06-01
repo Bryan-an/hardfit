@@ -138,6 +138,9 @@ const CLOSED_FORM_NAMES: readonly string[] = [
   DistributionName.Poisson,
   DistributionName.Geometric,
   DistributionName.DiscreteUniform,
+  // M2.3 Batch D closed-form MLE family (Inverse Gaussian: mu=mean, lambda=n/(Σ(1/x)−n/mu); params
+  // pinned to 1e-9 + the universal LL cross-check). HardFit IS the MLE, so the LL match is exact.
+  DistributionName.InverseGaussian,
 ]
 
 /** Decode a discrete-cell upper bound: the gen_fixtures oracle emits the unbounded tail's `hi`

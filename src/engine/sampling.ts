@@ -24,6 +24,7 @@ import rayleighSampler from '@stdlib/random-base-rayleigh'
 import tSampler from '@stdlib/random-base-t'
 import uniformSampler from '@stdlib/random-base-uniform'
 import weibullSampler from '@stdlib/random-base-weibull'
+import { BOOTSTRAP_SEED_SALT } from './constants'
 import { DistributionName, type FittedParams } from './types'
 
 /**
@@ -64,6 +65,7 @@ type DiscreteUniformParams = { a: number; b: number }
 // M2.3 Batch D — multi-parameter MLE families; same convention as each module + density slots.
 type StudentTParams = { loc: number; scale: number; df: number } // standard t wrapped by loc+scale
 type FisherFParams = { d1: number; d2: number } // d1 = numerator df, d2 = denominator df
+type InverseGaussianParams = { mu: number; lambda: number } // mu = mean, lambda = shape (Wald)
 
 /** Fréchet's location is fixed at 0 in HardFit (a 2-parameter Fréchet); the sampler's 3rd
  *  positional arg is that location `m`. Named to avoid a bare 0 literal in the factory call. */
@@ -71,6 +73,19 @@ const FRECHET_LOCATION = 0
 /** Lévy's location is fixed at 0 in HardFit (a 1-parameter Lévy); the sampler's 1st positional
  *  arg is that location `mu`. Named to avoid a bare 0 literal in the factory call. */
 const LEVY_LOCATION = 0
+/** Inverse-Gaussian (Michael–Schucany–Haas) accept-step probability split point: a draw x is kept
+ *  with probability mu/(mu+x), else folded to mu²/x. Named to avoid bare arithmetic in the case. */
+const IG_FOLD_NUMERATOR_DOUBLE = 2
+const IG_FOLD_QUAD = 4
+
+/** Derives a DISTINCT sub-stream seed from the master `seed` by mixing in `BOOTSTRAP_SEED_SALT`
+ *  (Knuth's golden-ratio constant) as an unsigned 32-bit value. The MSH sampler draws a normal and a
+ *  uniform per variate; seeding BOTH streams with the same `seed` would correlate the accept step
+ *  with the generated x and bias the draws — so the uniform stream uses this salted seed. The
+ *  `>>> 0` keeps it a non-negative 32-bit integer the @stdlib factory accepts. */
+function saltSeed(seed: number): number {
+  return (seed ^ BOOTSTRAP_SEED_SALT) >>> 0
+}
 
 /**
  * Builds a seeded iid sampler for one distribution in HardFit's param convention. Each
@@ -191,6 +206,25 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
       const { d1, d2 } = p as FisherFParams
       const draw = fSampler.factory(d1, d2, { seed }) // (d1 = numerator df, d2 = denominator df)
       return () => draw()
+    }
+    case DistributionName.InverseGaussian: {
+      const { mu, lambda } = p as InverseGaussianParams
+      // Michael–Schucany–Haas: x is a deterministic transform of a standard-normal draw, then an
+      // accept step folds it to mu²/x with probability 1 − mu/(mu+x). The two streams MUST be
+      // independently seeded — a shared seed correlates the uniform accept with the normal-derived x
+      // and biases the sampler (a smoke test would not catch it; the statistical test does).
+      const drawNormal = normalSampler.factory(0, 1, { seed }) // standard normal stream
+      const drawUniform = uniformSampler.factory(0, 1, { seed: saltSeed(seed) }) // distinct U(0,1) stream
+      return () => {
+        const nu = drawNormal()
+        const y = nu * nu
+        const x =
+          mu +
+          (mu * mu * y) / (IG_FOLD_NUMERATOR_DOUBLE * lambda) -
+          (mu / (IG_FOLD_NUMERATOR_DOUBLE * lambda)) *
+            Math.sqrt(IG_FOLD_QUAD * mu * lambda * y + mu * mu * y * y)
+        return drawUniform() <= mu / (mu + x) ? x : (mu * mu) / x
+      }
     }
     default:
       throw new Error(`makeSampler: no sampler for '${name}'`)
