@@ -18,3 +18,11 @@ export const BCA_JACKKNIFE_MAX_N = 2000
 /** Bootstrap replicates per chunk: at each chunk boundary the loop reports progress,
  *  checks for cancellation, and yields (0 ms timer) so a worker can service messages. */
 export const CHUNK = 50
+/** Default number of top-ranked (lowest-AICc) fits the bootstrap orchestrator runs.
+ *  Bootstrapping every distribution is wasteful; only the best few are worth the cost. */
+export const BOOTSTRAP_TOP_K = 3
+/** Odd 32-bit multiplier (Knuth's golden-ratio constant) for deriving a distinct sampler
+ *  seed per bootstrapped fit. Mixing the master seed with `SALT·(index+1)` spreads the
+ *  per-fit streams far apart so they are uncorrelated (adjacent indices alone would yield
+ *  near-identical seeds — a silent statistical bug). */
+export const BOOTSTRAP_SEED_SALT = 0x9e3779b1
