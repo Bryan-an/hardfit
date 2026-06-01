@@ -16,7 +16,9 @@ describe('ksStatistic', () => {
   it('does not mutate the input array', () => {
     const data = [3, 1, 2]
     ksStatistic(data, (x) => x / 3)
-    expectClose(data[0]!, 3) // original order preserved
+    const first = data[0]
+    if (first === undefined) throw new Error('expected a non-empty input array')
+    expectClose(first, 3) // original order preserved
   })
   it('clamps tiny negative FP noise to 0 (perfect fit)', () => {
     const d = ksStatistic([1, 2, 3, 4], (x) => x / 4) // step exactly matches at integers

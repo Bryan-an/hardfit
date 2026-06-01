@@ -25,9 +25,11 @@ describe('selection', () => {
       { name: 'c', logLik: -15, k: 1 },
     ]
     const ranked = rankByAICc(fits, 30)
-    expect(ranked[0]!.name).toBe('b')
-    expect(ranked[0]!.rank).toBe(1)
-    expectClose(ranked[0]!.deltaAICc, 0)
+    const best = ranked[0]
+    if (!best) throw new Error('expected at least one ranked fit')
+    expect(best.name).toBe('b')
+    expect(best.rank).toBe(1)
+    expectClose(best.deltaAICc, 0)
     const wsum = ranked.reduce((s, r) => s + r.weight, 0)
     expectClose(wsum, 1, 1e-12)
   })

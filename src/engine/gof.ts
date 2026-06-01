@@ -9,8 +9,8 @@ export function ksStatistic(data: readonly number[], cdf: (x: number) => number)
   if (n === 0) return Number.NaN
   let dPlus = -Infinity
   let dMinus = -Infinity
-  for (let j = 0; j < n; j++) {
-    const f = Math.min(1, Math.max(0, cdf(x[j]!))) // clamp F into [0,1]
+  for (const [j, value] of x.entries()) {
+    const f = Math.min(1, Math.max(0, cdf(value))) // clamp F into [0,1]
     dPlus = Math.max(dPlus, (j + 1) / n - f) // i/n - F(x_i),  i = j+1
     dMinus = Math.max(dMinus, f - j / n) // F(x_i) - (i-1)/n
   }
