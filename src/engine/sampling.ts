@@ -1,9 +1,16 @@
+import betaSampler from '@stdlib/random-base-beta'
+import betaprimeSampler from '@stdlib/random-base-betaprime'
 import cauchySampler from '@stdlib/random-base-cauchy'
+import chiSampler from '@stdlib/random-base-chi'
+import chisquareSampler from '@stdlib/random-base-chisquare'
+import cosineSampler from '@stdlib/random-base-cosine'
 import exponentialSampler from '@stdlib/random-base-exponential'
 import frechetSampler from '@stdlib/random-base-frechet'
 import gammaSampler from '@stdlib/random-base-gamma'
 import gumbelSampler from '@stdlib/random-base-gumbel'
+import invgammaSampler from '@stdlib/random-base-invgamma'
 import laplaceSampler from '@stdlib/random-base-laplace'
+import levySampler from '@stdlib/random-base-levy'
 import logisticSampler from '@stdlib/random-base-logistic'
 import lognormalSampler from '@stdlib/random-base-lognormal'
 import normalSampler from '@stdlib/random-base-normal'
@@ -35,10 +42,21 @@ type LogisticParams = { mu: number; s: number }
 type GumbelParams = { mu: number; beta: number }
 type CauchyParams = { x0: number; gamma: number }
 type FrechetParams = { shape: number; scale: number } // alpha=shape, s=scale, m=0
+// M2.3 Batch B — same convention as each distribution's own module + density slots.
+type LevyParams = { c: number } // location fixed at 0; c = scale
+type ChiSquaredParams = { df: number }
+type ChiParams = { k: number }
+type InvGammaParams = { shape: number; scale: number } // alpha=shape, beta=scale (direct, not a rate)
+type BetaPrimeParams = { alpha: number; beta: number }
+type CosineParams = { mu: number; s: number }
+type BetaParams = { alpha: number; beta: number }
 
 /** Fréchet's location is fixed at 0 in HardFit (a 2-parameter Fréchet); the sampler's 3rd
  *  positional arg is that location `m`. Named to avoid a bare 0 literal in the factory call. */
 const FRECHET_LOCATION = 0
+/** Lévy's location is fixed at 0 in HardFit (a 1-parameter Lévy); the sampler's 1st positional
+ *  arg is that location `mu`. Named to avoid a bare 0 literal in the factory call. */
+const LEVY_LOCATION = 0
 
 /**
  * Builds a seeded iid sampler for one distribution in HardFit's param convention. Each
@@ -105,6 +123,34 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
     case DistributionName.Frechet: {
       const { shape, scale } = p as FrechetParams
       return frechetSampler.factory(shape, scale, FRECHET_LOCATION, { seed }) // alpha, s=SCALE, m=0
+    }
+    case DistributionName.Levy: {
+      const { c } = p as LevyParams
+      return levySampler.factory(LEVY_LOCATION, c, { seed }) // (mu=0, c=SCALE)
+    }
+    case DistributionName.ChiSquared: {
+      const { df } = p as ChiSquaredParams
+      return chisquareSampler.factory(df, { seed }) // k = degrees of freedom
+    }
+    case DistributionName.Chi: {
+      const { k } = p as ChiParams
+      return chiSampler.factory(k, { seed }) // k = degrees of freedom
+    }
+    case DistributionName.InvGamma: {
+      const { shape, scale } = p as InvGammaParams
+      return invgammaSampler.factory(shape, scale, { seed }) // alpha=shape, beta=SCALE (direct)
+    }
+    case DistributionName.BetaPrime: {
+      const { alpha, beta } = p as BetaPrimeParams
+      return betaprimeSampler.factory(alpha, beta, { seed }) // two shapes
+    }
+    case DistributionName.Cosine: {
+      const { mu, s } = p as CosineParams
+      return cosineSampler.factory(mu, s, { seed }) // (mu=location, s=SCALE)
+    }
+    case DistributionName.Beta: {
+      const { alpha, beta } = p as BetaParams
+      return betaSampler.factory(alpha, beta, { seed }) // two shapes, support (0,1)
     }
     default:
       throw new Error(`makeSampler: no sampler for '${name}'`)

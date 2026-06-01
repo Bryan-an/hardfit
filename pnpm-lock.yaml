@@ -17,7 +17,22 @@ importers:
       '@stdlib/math-base-special-trigamma':
         specifier: 0.3.1
         version: 0.3.1
+      '@stdlib/random-base-beta':
+        specifier: 0.2.2
+        version: 0.2.2
+      '@stdlib/random-base-betaprime':
+        specifier: 0.2.2
+        version: 0.2.2
       '@stdlib/random-base-cauchy':
+        specifier: 0.2.2
+        version: 0.2.2
+      '@stdlib/random-base-chi':
+        specifier: 0.2.2
+        version: 0.2.2
+      '@stdlib/random-base-chisquare':
+        specifier: 0.2.2
+        version: 0.2.2
+      '@stdlib/random-base-cosine':
         specifier: 0.2.2
         version: 0.2.2
       '@stdlib/random-base-exponential':
@@ -32,7 +47,13 @@ importers:
       '@stdlib/random-base-gumbel':
         specifier: 0.2.2
         version: 0.2.2
+      '@stdlib/random-base-invgamma':
+        specifier: 0.2.2
+        version: 0.2.2
       '@stdlib/random-base-laplace':
+        specifier: 0.2.2
+        version: 0.2.2
+      '@stdlib/random-base-levy':
         specifier: 0.2.2
         version: 0.2.2
       '@stdlib/random-base-logistic':
@@ -59,6 +80,24 @@ importers:
       '@stdlib/random-base-weibull':
         specifier: 0.2.2
         version: 0.2.2
+      '@stdlib/stats-base-dists-beta-cdf':
+        specifier: 0.2.3
+        version: 0.2.3
+      '@stdlib/stats-base-dists-beta-logpdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-beta-quantile':
+        specifier: 0.2.3
+        version: 0.2.3
+      '@stdlib/stats-base-dists-betaprime-cdf':
+        specifier: 0.2.3
+        version: 0.2.3
+      '@stdlib/stats-base-dists-betaprime-logpdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-betaprime-quantile':
+        specifier: 0.2.3
+        version: 0.2.3
       '@stdlib/stats-base-dists-cauchy-cdf':
         specifier: 0.3.1
         version: 0.3.1
@@ -68,7 +107,31 @@ importers:
       '@stdlib/stats-base-dists-cauchy-quantile':
         specifier: 0.3.1
         version: 0.3.1
+      '@stdlib/stats-base-dists-chi-cdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-chi-logpdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-chi-quantile':
+        specifier: 0.2.3
+        version: 0.2.3
       '@stdlib/stats-base-dists-chisquare-cdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-chisquare-logpdf':
+        specifier: 0.2.3
+        version: 0.2.3
+      '@stdlib/stats-base-dists-chisquare-quantile':
+        specifier: 0.2.3
+        version: 0.2.3
+      '@stdlib/stats-base-dists-cosine-cdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-cosine-logpdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-cosine-quantile':
         specifier: 0.3.1
         version: 0.3.1
       '@stdlib/stats-base-dists-exponential-cdf':
@@ -107,6 +170,15 @@ importers:
       '@stdlib/stats-base-dists-gumbel-quantile':
         specifier: 0.3.1
         version: 0.3.1
+      '@stdlib/stats-base-dists-invgamma-cdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-invgamma-logpdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-invgamma-quantile':
+        specifier: 0.2.3
+        version: 0.2.3
       '@stdlib/stats-base-dists-laplace-cdf':
         specifier: 0.3.1
         version: 0.3.1
@@ -114,6 +186,15 @@ importers:
         specifier: 0.3.1
         version: 0.3.1
       '@stdlib/stats-base-dists-laplace-quantile':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-levy-cdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-levy-logpdf':
+        specifier: 0.3.1
+        version: 0.3.1
+      '@stdlib/stats-base-dists-levy-quantile':
         specifier: 0.3.1
         version: 0.3.1
       '@stdlib/stats-base-dists-logistic-cdf':
@@ -1759,6 +1840,11 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/constants-float64-smallest-subnormal@0.2.3':
+    resolution: {integrity: sha512-NcXOJRA9vuhWcPPvwQf+c86Oab8UtJ3P8Y2DwKt9eRzjRdFFMw73pDmYXEOHSwczn/mGaTHG4HxmVBTugh/ezw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/constants-float64-sqrt-eps@0.2.3':
     resolution: {integrity: sha512-N6ga0XNLkDgrGCs1cgajXzTYFgl6gDrgWOJW3AQhZPaFEswTtD+yMmcw3p4ye1LZpU3JyDr8hcY2iwL8whX+nA==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
@@ -1924,6 +2010,16 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/math-base-special-acos@0.2.4':
+    resolution: {integrity: sha512-lidI9Q1No+jYM7glXFXMPzxQKwrzqV/QuAp4hVDmidDTL1d6NW0jPBAiaRL7RLcqXqd8oYVirTrQIga8RhMatQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-asin@0.2.4':
+    resolution: {integrity: sha512-HM/x7n25umG0plZrAil2wq21m6+9rA9TDTXErYXAv27HEM5NZGCZn9i+kpTog5/IDSdM58OkTsEB5FOfaBCjuw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/math-base-special-atan2@0.3.1':
     resolution: {integrity: sha512-cU4GXuYfQIkJjAe7vdhyuNPWjKT0ziZIcoCO+JTb5JPxv3ofdokkfmLf10cloz+E1dlgztkK3Lv3TpJS2P8pAQ==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
@@ -1931,6 +2027,31 @@ packages:
 
   '@stdlib/math-base-special-atan@0.2.4':
     resolution: {integrity: sha512-DM21VtQSb4jllOuU84vYgSPFkkQ/nFJr+5Pn+FNXypHQqQ3J0sLU0Sm5QTuMXdQPna+OyHQvzzSz8FqPtiVuAg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-beta@0.3.1':
+    resolution: {integrity: sha512-DabfQZifUcNF529IYtj/9A5oAmZD6g4JhQt1drx8sMMLUJ89r8TZLIyMZU/bgp4cpzSkRGRSPjfXWL/98y5Y7w==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-betainc@0.2.3':
+    resolution: {integrity: sha512-yTGYcCptTWVFxL9hv4Uc221kb7tULU5JkRp5oklPhZmg2uj/eRIvaGYtYvzuTnEU2HpdgWcTVwdDaWsG68F6NQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-betaincinv@0.2.3':
+    resolution: {integrity: sha512-PbOUNFuVaNvaLLXANFc8d+Y7MX0HrHugWR7AvCKEH9Kc+codwuZaZOXgErsJKNaCP34M61kCR918Kn/X/BwZWA==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-betaln@0.3.1':
+    resolution: {integrity: sha512-1wT+AEJHFxzQN/HUaunmDObaKurd2s06duyFohNGrcIRvXchzRpVJ4pT3ysSmM9aBc6KwUQaIiA+KFMK8CB/qQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-binomcoef@0.3.1':
+    resolution: {integrity: sha512-ywcno89Y7ntRdj3NdAVfVzYoIrJb5lILhq+K+NqhgrJBOcrE8ZF+/yPhyVwjUvksfGy990tBnyhx+06VLVFAQg==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -1946,6 +2067,11 @@ packages:
 
   '@stdlib/math-base-special-cos@0.3.1':
     resolution: {integrity: sha512-efthz58G0wf8rXh4+jbYeRuRCagNlYb8AL3es1GxwV9P9/8ZpKAlkQiRPY3AI3ZJMB17aR/KHpVw7Pz+rw4Fhg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-cospi@0.4.1':
+    resolution: {integrity: sha512-sYtGwES35D+W+tzB04K8cbhU5Tyggk5Zp9oSA8SSS1Dxx5fOJDuhjc/9j+LBuEkrMdlMoQ25eUUeefyk+TzxDA==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -1979,6 +2105,11 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/math-base-special-factorial@0.3.2':
+    resolution: {integrity: sha512-YOqPZBtZPP+Pa6jQn/IY0JjGx1sShxQ27XYbpgupg9yZCvabLzhHg+J6/mnjqf4eti6UcVtCITFUZOZ671GyOQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/math-base-special-floor@0.2.4':
     resolution: {integrity: sha512-YSDt9gHSp8SeVBVzHfpZZ1HFEQDPihHUF92zTDCRGKeKBC4BTFlw9Q4/fNWqS1mtuBGli1zgpRbiTv3atQ5EjQ==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
@@ -1989,8 +2120,18 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/math-base-special-gamma-delta-ratio@0.3.1':
+    resolution: {integrity: sha512-Tekp7Flw36nZPZ8fQilkPRiGyMbYyzWjRV/HZWuBaqqDWE3+J2W68qflGFCad0M6qkWDxLV65TJ9E8yJiTYxAQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/math-base-special-gamma-lanczos-sum-expg-scaled@0.2.2':
     resolution: {integrity: sha512-P8exugMuGijA+9FzG1krmfPIHWqRolFm9xws+H1OGTw9lq6c+sPAny/1KNLo/QbL/UaKrjhbeUDVHOjN3wj2Hw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-gamma-lanczos-sum@0.3.2':
+    resolution: {integrity: sha512-wIH23KUPBKhu0nCraZ3aY882ICDtLIDxeiiBY4F1hNeBBrMeODcCWJc3+jwXvzjigBXPRFHWJqjOyL57FyoGBQ==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -2016,6 +2157,21 @@ packages:
 
   '@stdlib/math-base-special-gammaln@0.3.1':
     resolution: {integrity: sha512-ptzVz18xkfxzgekgAbk6ytMoDc7MYAUY4xZuAW/SyFGO6sCPVbwU4GH1/1IQAGLrDKYizKeVoTsO5NGK5Zpvyw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-gcd@0.3.2':
+    resolution: {integrity: sha512-eQKqRFOlHGw5Ce4mo91uilqywONEp/7L4d/bDEUqL1sRj3bTAIZeCa6ap7wl8vnMXCHLGI0ve7xp6wxVHo4Bdg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-kernel-betainc@0.2.3':
+    resolution: {integrity: sha512-ho7hVn2GAnHsoj+SKJxrgo5rvftmIinE2H2J9/NWXYU6ubjQJ1EmJAzZ6fMSED++lK+eARS1kUl8hUeKRuIbDQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-kernel-betaincinv@0.2.3':
+    resolution: {integrity: sha512-k93/sg4xC/eIsUUw1OD3Rwb8Y2Bl5moTMuOoKeSo5aogqpP6mFwSKOkoW9VS4iAHFUHkjPLgpaN7eRStm1/Deg==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -2059,8 +2215,18 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/math-base-special-maxabs@0.3.1':
+    resolution: {integrity: sha512-nvlh0Pkwrmh3E6Nva+o0dbAksJ7BErsp9v3Q783TGNlwsRNovOc8FmrkqvmuDhWkSoUUuYtefYyxz1HZ+CzvDg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/math-base-special-min@0.2.4':
     resolution: {integrity: sha512-RjwMYI+CqdD8Pg41RBsvv0g50nl3d2a5SJBXDcjzHIs0Lj4+qdOXSYQYbn2IQH0dVCNlZrBwaGX3L8O9tu5umQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/math-base-special-minabs@0.2.4':
+    resolution: {integrity: sha512-aRQBXaoSBj026u90ZTreKa88GAF8SWSqm2WD43v22TFJVJ0qhjtSmQXRLs+tD2ug7LDUHa8Bf1Ui2DYuVw41uQ==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -2304,8 +2470,33 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/random-base-beta@0.2.2':
+    resolution: {integrity: sha512-CjFtjTi0Q1Wd7pGR+lueA9HMVDb6VUfdQpJv4VVMvhRIxCEVIBc4bIakWbFaF+XWZfweCRzOda+gjpHHnDSDAA==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/random-base-betaprime@0.2.2':
+    resolution: {integrity: sha512-Y/Usr7oCU8XKqK2TvCVtl4Pf9GZ3dTy1kW8wc0EtiDJ3MwNk9FEaDw4gZrV4Yl8dabHCHlr4fSdDYwA9/wjqNQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/random-base-cauchy@0.2.2':
     resolution: {integrity: sha512-5u7HaMxrl2qJKD9zCYqVB5n1X3B2x2lLYh1qbZqRNDwsbMRj8uaMxp+uGjpJKQL81Ef2SQGuOdW+khT7KEJnew==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/random-base-chi@0.2.2':
+    resolution: {integrity: sha512-B3mWEwjLV7C4a6/93ipxAPKMG+GHXwpO1jF7xwnXeGqAbiByFHt1b48KiE6lGFdxM3Q7dnzXoNilf0Lrpg+w/Q==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/random-base-chisquare@0.2.2':
+    resolution: {integrity: sha512-0jDd1so+KbB8xo+eDDOLpKXSjF5u1ihIqV95PYnwxPGM4MmPsMA+bWIpe3Od07otgNaFmdneXb1cgt3E+Zwi0w==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/random-base-cosine@0.2.2':
+    resolution: {integrity: sha512-eJNhkBRV/+CD+XVcvlHSaszQinKrW96NxjxMn05A4oZ1ua9JPWscaEDbKNtmd3dOmyUI2pN2YNrzfeeVuuSLeg==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -2334,8 +2525,18 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/random-base-invgamma@0.2.2':
+    resolution: {integrity: sha512-kmri9dlYCPNizR3PKFXy+n9LznTpST7xSlAid3Mtj/PK6f/4d7Jq+Haral2tjUXchoM1mczEe1QpEUYiBb30UQ==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/random-base-laplace@0.2.2':
     resolution: {integrity: sha512-CcvPhdzlBf67GpVRzE0c3amLqU/LhuQrIQEsvgtCywtWliabS4h6KGIHWrwQAzeEB09qYlKM28MD65W1HOouDw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/random-base-levy@0.2.2':
+    resolution: {integrity: sha512-Imw9hskp8TUtdDB03hvzHy70IiPcUIQDby8NV/WhAnZwwtIkoOo2seU7Skv4iMY0QrGNNhG7J092FCNjJ8Aq1g==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -2409,6 +2610,36 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/stats-base-dists-beta-cdf@0.2.3':
+    resolution: {integrity: sha512-k0nS5kEKyi0OYokYb8t1Z6BC0r6kKcXenH3p2PoCyYgHrID8AN+Ms783M/KPhB3E7d4TjzTGXJbVR8E+UIZXfA==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-beta-logpdf@0.3.1':
+    resolution: {integrity: sha512-WtH/zVsMbrGhfTEU5SbNZEsRDAmUd+g1GLAkwCdnZH+MC9aLGhoHKbM+miwD7aoAXn4KtU4woj2FMINX7Faqmw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-beta-quantile@0.2.3':
+    resolution: {integrity: sha512-nrQuVzQDkThbNrY+zd01QjWp/OUfPWvRWh4ClPAxKJdvMleWSKIYVfcxx8Kgc5moW4xk7Q8QgJRJ4wpuugkszg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-betaprime-cdf@0.2.3':
+    resolution: {integrity: sha512-qYQRp8ORlhU6j4Z8KFyG2XKjOqxWJK8/Cq/0IN1qjt6+K/TQCwyG/biPUDdEpe/jkCBMBrLvkXuAkn4MttwSxw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-betaprime-logpdf@0.3.1':
+    resolution: {integrity: sha512-Eh0Guz1Cx3cGetCYJCoaF8LnBfGe5NDkDMrt7D3FOkh7sgJaSNcF7QHFE6i39tP3cPB9mBJLWnRpUvKG8exdiw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-betaprime-quantile@0.2.3':
+    resolution: {integrity: sha512-ysZCi1kxL8PQnp27+IPv0gh/5W54/BNtuWcvQ2q6ssVaFtJIsKOesulWMyisvt9n0HRsfevrz6H/I/RVtzkSAg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/stats-base-dists-cauchy-cdf@0.3.1':
     resolution: {integrity: sha512-Jqq1YiB5h/SW78cjPhPRegIW0YLcRwiYSJYHsBj/IYyFu1vWxrQKOL1Nl1mcl+KLJwo8itjTPpj+/UPVac48MQ==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
@@ -2424,8 +2655,48 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/stats-base-dists-chi-cdf@0.3.1':
+    resolution: {integrity: sha512-SLa3s8Q7PLR2p0kaz/VQds/33yZL5CkeS4JNZAN9FUPJPxWf8PGcgg46QBQHtEHPFAgHESuA0/ty6veVRDnFKA==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-chi-logpdf@0.3.1':
+    resolution: {integrity: sha512-REDrzPFApm5Yo+d4Xs831M8ItRQoK4qEYRUuPYHW90NrmUjrATskoVC4F3QoMktO6AQveDBhJ2o3sR3IVwf3Og==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-chi-quantile@0.2.3':
+    resolution: {integrity: sha512-MxJWsJpGajvQKI2Av6IRNw6f6NibBBQRflb0MtRYAfcUW1iw7WlM2zJUtktcWwU3u277jzXS5un1uHwCJXm9Ow==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/stats-base-dists-chisquare-cdf@0.3.1':
     resolution: {integrity: sha512-j0X9V9FO0kwpdmhaa38+JuEjkHws1b3SWJUGuCx9C/eUdTY4soi9EwjdXheDRu0ww9qRhrECpXobHUiLJEdnTw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-chisquare-logpdf@0.2.3':
+    resolution: {integrity: sha512-QsXRj30HLA9hNP6F6iN6COvPo0PKY7VxIniq6OnI6qGhZruAYvwrGQwinTkDcWzOLABcDYvAllPm3HeU8y6O0Q==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-chisquare-quantile@0.2.3':
+    resolution: {integrity: sha512-a/7bGpqiIqtN8h+8fdlP9hBCx8CS4Y/M2xbb9U240rDYl7gbkrSavOrBo3hQYshV6NlnLdDNoYg4RW5Y0YM55Q==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-cosine-cdf@0.3.1':
+    resolution: {integrity: sha512-m/DQCIzXq/H4071kDulywgeABVn/p/L5J8TWHWF0ZtFBWx+Ml//sUtx/97n2YN4lS9IBO4AO+6UG1pFYosnDzw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-cosine-logpdf@0.3.1':
+    resolution: {integrity: sha512-PS/yMNhkOnzf6ZLW2onUjqM7S70xk6xilzEZtJ3l1qd/KSoPAxN2vxgWfx5AIc+iIYr/q+z2YV+Auo7rY/DkVg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-cosine-quantile@0.3.1':
+    resolution: {integrity: sha512-loMX5PQ/ZIM3uJBamI/Hi8MiCAQ+EBMPka2iiWZS3tXUOXaVqo/Uf3Yii8I/VElpX/T/wSdSIMl+BXlNJnW5CQ==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -2504,6 +2775,21 @@ packages:
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
+  '@stdlib/stats-base-dists-invgamma-cdf@0.3.1':
+    resolution: {integrity: sha512-3Qa4/SH4s2H4WWngFF6uL7uh+40PlYRL3w5uagnPAe+anL4uK+psFLfTuD61wMropACzj0IbLAcbYF3fYaa93Q==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-invgamma-logpdf@0.3.1':
+    resolution: {integrity: sha512-UbuhBc591VQG5n3DW8FE0PH7W5pzvppESRc0NoS2np+yzijdkMsbyCUWTqyCMJXxc39QwViFPaVZMFVcs3qFJg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-invgamma-quantile@0.2.3':
+    resolution: {integrity: sha512-5bCcCJfNFn0J0Va6O19L4C1MWxoCfVFWgc6a9T5RM5Jmoe4kUKsH3rBiP5WebvEbJR4lLbwC5avs4U1XrAa7yg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
   '@stdlib/stats-base-dists-laplace-cdf@0.3.1':
     resolution: {integrity: sha512-a59eEkWv4w4Q+OMGZHc2uKH458RzDbNGes7LZ5dMdN4etbESuQoyPh2hKgt6uRqfgxuCwJfyCSsWq34D7xnqjg==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
@@ -2516,6 +2802,21 @@ packages:
 
   '@stdlib/stats-base-dists-laplace-quantile@0.3.1':
     resolution: {integrity: sha512-R6OhhJYn7CaY0LCOB+0bYMmji3z+TEmcty3YVGJ8wMvsYqIwalM8wV5TIwlaeb7bLVJ1L2XotIsdKbBSBFTqZw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-levy-cdf@0.3.1':
+    resolution: {integrity: sha512-0L75sHCK8lCoBreAHKayVMD/m13iN+RhBtUSn7k8IJrWANbQFU3frOITKBdCrnYZqYTE1S9asmkU80PlNqYXmg==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-levy-logpdf@0.3.1':
+    resolution: {integrity: sha512-GR+XvvRLmOMO/a05wu7IJdI92IyVlbwDkgze9BCC1URx4Yzf2aDRlDvlp+UJGxEt/4w5zC8Unodul4UmI9iOCw==}
+    engines: {node: '>=0.10.0', npm: '>2.7.0'}
+    os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
+
+  '@stdlib/stats-base-dists-levy-quantile@0.3.1':
+    resolution: {integrity: sha512-B/e6UBwugOU9/s3+Opkt/MkuaGjBp2UTu1Mn/bQSNoJxKA2ajCcRXPIkE5dzkm/l+xUrMjg3hZDIAUxmPbp05Q==}
     engines: {node: '>=0.10.0', npm: '>2.7.0'}
     os: [aix, darwin, freebsd, linux, macos, openbsd, sunos, win32, windows]
 
@@ -5370,6 +5671,8 @@ snapshots:
 
   '@stdlib/constants-float64-smallest-normal@0.2.3': {}
 
+  '@stdlib/constants-float64-smallest-subnormal@0.2.3': {}
+
   '@stdlib/constants-float64-sqrt-eps@0.2.3': {}
 
   '@stdlib/constants-float64-sqrt-two-pi@0.2.3': {}
@@ -5568,6 +5871,27 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/math-base-special-acos@0.2.4':
+    dependencies:
+      '@stdlib/constants-float64-fourth-pi': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-unary': 0.2.7
+      '@stdlib/math-base-special-asin': 0.2.4
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-asin@0.2.4':
+    dependencies:
+      '@stdlib/constants-float64-fourth-pi': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-unary': 0.2.7
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/math-base-special-atan2@0.3.1':
     dependencies:
       '@stdlib/constants-float64-pi': 0.2.3
@@ -5590,6 +5914,65 @@ snapshots:
       '@stdlib/constants-float64-pinf': 0.2.3
       '@stdlib/math-base-assert-is-nan': 0.2.3
       '@stdlib/math-base-napi-unary': 0.2.7
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-beta@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-e': 0.2.3
+      '@stdlib/constants-float64-eps': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-abs': 0.2.3
+      '@stdlib/math-base-special-exp': 0.2.5
+      '@stdlib/math-base-special-log1p': 0.2.4
+      '@stdlib/math-base-special-pow': 0.3.1
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-betainc@0.2.3':
+    dependencies:
+      '@stdlib/math-base-special-kernel-betainc': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-betaincinv@0.2.3':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-kernel-betaincinv': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-betaln@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-ln-sqrt-two-pi': 0.2.3
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-gamma': 0.3.1
+      '@stdlib/math-base-special-gammaln': 0.3.1
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/math-base-special-log1p': 0.2.4
+      '@stdlib/math-base-special-max': 0.3.1
+      '@stdlib/math-base-special-min': 0.2.4
+      '@stdlib/math-base-special-pow': 0.3.1
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-binomcoef@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-max-safe-integer': 0.2.3
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/math-base-assert-is-integer': 0.2.7
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-assert-is-odd': 0.3.2
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-floor': 0.2.4
+      '@stdlib/math-base-special-gcd': 0.3.2
       '@stdlib/utils-library-manifest': 0.2.4
     transitivePeerDependencies:
       - supports-color
@@ -5622,6 +6005,22 @@ snapshots:
       '@stdlib/math-base-special-kernel-sin': 0.2.4
       '@stdlib/math-base-special-rempio2': 0.3.1
       '@stdlib/number-float64-base-get-high-word': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-cospi@0.4.1':
+    dependencies:
+      '@stdlib/constants-float64-max-safe-integer': 0.2.3
+      '@stdlib/constants-float64-pi': 0.2.3
+      '@stdlib/math-base-assert-is-infinite': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-unary': 0.2.7
+      '@stdlib/math-base-special-abs': 0.2.3
+      '@stdlib/math-base-special-cos': 0.3.1
+      '@stdlib/math-base-special-floor': 0.2.4
+      '@stdlib/math-base-special-fmod': 0.1.1
+      '@stdlib/math-base-special-sin': 0.3.1
       '@stdlib/utils-library-manifest': 0.2.4
     transitivePeerDependencies:
       - supports-color
@@ -5701,6 +6100,18 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/math-base-special-factorial@0.3.2':
+    dependencies:
+      '@stdlib/constants-float64-max-nth-factorial': 0.1.1
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/math-base-assert-is-integer': 0.2.7
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-unary': 0.2.7
+      '@stdlib/math-base-special-gamma': 0.3.1
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/math-base-special-floor@0.2.4':
     dependencies:
       '@stdlib/math-base-napi-unary': 0.2.7
@@ -5723,7 +6134,33 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/math-base-special-gamma-delta-ratio@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-e': 0.2.3
+      '@stdlib/constants-float64-eps': 0.2.3
+      '@stdlib/constants-float64-gamma-lanczos-g': 0.2.3
+      '@stdlib/constants-float64-max-nth-factorial': 0.1.1
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-abs': 0.2.3
+      '@stdlib/math-base-special-exp': 0.2.5
+      '@stdlib/math-base-special-factorial': 0.3.2
+      '@stdlib/math-base-special-floor': 0.2.4
+      '@stdlib/math-base-special-gamma': 0.3.1
+      '@stdlib/math-base-special-gamma-lanczos-sum': 0.3.2
+      '@stdlib/math-base-special-log1p': 0.2.4
+      '@stdlib/math-base-special-pow': 0.3.1
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/math-base-special-gamma-lanczos-sum-expg-scaled@0.2.2':
+    dependencies:
+      '@stdlib/math-base-napi-unary': 0.2.7
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-gamma-lanczos-sum@0.3.2':
     dependencies:
       '@stdlib/math-base-napi-unary': 0.2.7
       '@stdlib/utils-library-manifest': 0.2.4
@@ -5845,6 +6282,95 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/math-base-special-gcd@0.3.2':
+    dependencies:
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/constants-int32-max': 0.3.1
+      '@stdlib/math-base-assert-is-integer': 0.2.7
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-fmod': 0.1.1
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-kernel-betainc@0.2.3':
+    dependencies:
+      '@stdlib/constants-float64-e': 0.2.3
+      '@stdlib/constants-float64-eps': 0.2.3
+      '@stdlib/constants-float64-gamma-lanczos-g': 0.2.3
+      '@stdlib/constants-float64-half-pi': 0.2.3
+      '@stdlib/constants-float64-max': 0.2.3
+      '@stdlib/constants-float64-max-ln': 0.2.3
+      '@stdlib/constants-float64-min-ln': 0.2.3
+      '@stdlib/constants-float64-pi': 0.2.3
+      '@stdlib/constants-float64-smallest-normal': 0.2.3
+      '@stdlib/constants-int32-max': 0.3.1
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-abs': 0.2.3
+      '@stdlib/math-base-special-asin': 0.2.4
+      '@stdlib/math-base-special-beta': 0.3.1
+      '@stdlib/math-base-special-binomcoef': 0.3.1
+      '@stdlib/math-base-special-exp': 0.2.5
+      '@stdlib/math-base-special-expm1': 0.2.4
+      '@stdlib/math-base-special-factorial': 0.3.2
+      '@stdlib/math-base-special-floor': 0.2.4
+      '@stdlib/math-base-special-gamma': 0.3.1
+      '@stdlib/math-base-special-gamma-delta-ratio': 0.3.1
+      '@stdlib/math-base-special-gamma-lanczos-sum-expg-scaled': 0.2.2
+      '@stdlib/math-base-special-gammainc': 0.3.1
+      '@stdlib/math-base-special-gammaln': 0.3.1
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/math-base-special-log1p': 0.2.4
+      '@stdlib/math-base-special-max': 0.3.1
+      '@stdlib/math-base-special-maxabs': 0.3.1
+      '@stdlib/math-base-special-min': 0.2.4
+      '@stdlib/math-base-special-minabs': 0.2.4
+      '@stdlib/math-base-special-pow': 0.3.1
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/math-base-tools-continued-fraction': 0.2.3
+      '@stdlib/math-base-tools-sum-series': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-kernel-betaincinv@0.2.3':
+    dependencies:
+      '@stdlib/constants-float64-eps': 0.2.3
+      '@stdlib/constants-float64-half-pi': 0.2.3
+      '@stdlib/constants-float64-max': 0.2.3
+      '@stdlib/constants-float64-pi': 0.2.3
+      '@stdlib/constants-float64-smallest-normal': 0.2.3
+      '@stdlib/constants-float64-smallest-subnormal': 0.2.3
+      '@stdlib/constants-float64-sqrt-two': 0.2.3
+      '@stdlib/math-base-special-abs': 0.2.3
+      '@stdlib/math-base-special-acos': 0.2.4
+      '@stdlib/math-base-special-asin': 0.2.4
+      '@stdlib/math-base-special-beta': 0.3.1
+      '@stdlib/math-base-special-betainc': 0.2.3
+      '@stdlib/math-base-special-cos': 0.3.1
+      '@stdlib/math-base-special-erfcinv': 0.2.4
+      '@stdlib/math-base-special-exp': 0.2.5
+      '@stdlib/math-base-special-expm1': 0.2.4
+      '@stdlib/math-base-special-floor': 0.2.4
+      '@stdlib/math-base-special-gamma-delta-ratio': 0.3.1
+      '@stdlib/math-base-special-gammaincinv': 0.2.3
+      '@stdlib/math-base-special-kernel-betainc': 0.2.3
+      '@stdlib/math-base-special-ldexp': 0.2.5
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/math-base-special-log1p': 0.2.4
+      '@stdlib/math-base-special-max': 0.3.1
+      '@stdlib/math-base-special-min': 0.2.4
+      '@stdlib/math-base-special-pow': 0.3.1
+      '@stdlib/math-base-special-round': 0.3.1
+      '@stdlib/math-base-special-signum': 0.2.3
+      '@stdlib/math-base-special-sin': 0.3.1
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/math-base-tools-evalpoly': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/math-base-special-kernel-cos@0.2.4':
     dependencies:
       '@stdlib/math-base-napi-binary': 0.3.3
@@ -5938,12 +6464,30 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/math-base-special-maxabs@0.3.1':
+    dependencies:
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-abs': 0.2.3
+      '@stdlib/math-base-special-max': 0.3.1
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/math-base-special-min@0.2.4':
     dependencies:
       '@stdlib/constants-float64-ninf': 0.2.3
       '@stdlib/math-base-assert-is-nan': 0.2.3
       '@stdlib/math-base-assert-is-negative-zero': 0.2.3
       '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/math-base-special-minabs@0.2.4':
+    dependencies:
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-abs': 0.2.3
+      '@stdlib/math-base-special-min': 0.2.4
       '@stdlib/utils-library-manifest': 0.2.4
     transitivePeerDependencies:
       - supports-color
@@ -6407,6 +6951,52 @@ snapshots:
 
   '@stdlib/process-cwd@0.2.3': {}
 
+  '@stdlib/random-base-beta@0.2.2':
+    dependencies:
+      '@stdlib/array-to-json': 0.3.1
+      '@stdlib/array-uint32': 0.2.3
+      '@stdlib/assert-has-own-property': 0.2.3
+      '@stdlib/assert-is-boolean': 0.2.3
+      '@stdlib/assert-is-function': 0.2.3
+      '@stdlib/assert-is-plain-object': 0.2.3
+      '@stdlib/assert-is-positive-number': 0.2.3
+      '@stdlib/assert-is-uint32array': 0.2.3
+      '@stdlib/blas-base-gcopy': 0.2.3
+      '@stdlib/error-tools-fmtprodmsg': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-exp': 0.2.5
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/math-base-special-pow': 0.3.1
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/object-assign': 0.2.3
+      '@stdlib/random-base-improved-ziggurat': 0.2.2
+      '@stdlib/random-base-mt19937': 0.2.3
+      '@stdlib/string-format': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-write-accessor': 0.2.3
+      '@stdlib/utils-noop': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/random-base-betaprime@0.2.2':
+    dependencies:
+      '@stdlib/array-to-json': 0.3.1
+      '@stdlib/assert-is-plain-object': 0.2.3
+      '@stdlib/assert-is-positive-number': 0.2.3
+      '@stdlib/error-tools-fmtprodmsg': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/random-base-gamma': 0.2.2
+      '@stdlib/string-format': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-write-accessor': 0.2.3
+      '@stdlib/utils-noop': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/random-base-cauchy@0.2.2':
     dependencies:
       '@stdlib/array-to-json': 0.3.1
@@ -6421,6 +7011,67 @@ snapshots:
       '@stdlib/math-base-assert-is-nan': 0.2.3
       '@stdlib/math-base-special-tan': 0.3.1
       '@stdlib/random-base-improved-ziggurat': 0.2.2
+      '@stdlib/string-format': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-write-accessor': 0.2.3
+      '@stdlib/utils-noop': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/random-base-chi@0.2.2':
+    dependencies:
+      '@stdlib/array-to-json': 0.3.1
+      '@stdlib/assert-has-own-property': 0.2.3
+      '@stdlib/assert-is-function': 0.2.3
+      '@stdlib/assert-is-plain-object': 0.2.3
+      '@stdlib/assert-is-positive-number': 0.2.3
+      '@stdlib/error-tools-fmtprodmsg': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/random-base-chisquare': 0.2.2
+      '@stdlib/string-format': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-write-accessor': 0.2.3
+      '@stdlib/utils-noop': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/random-base-chisquare@0.2.2':
+    dependencies:
+      '@stdlib/array-to-json': 0.3.1
+      '@stdlib/assert-has-own-property': 0.2.3
+      '@stdlib/assert-is-function': 0.2.3
+      '@stdlib/assert-is-plain-object': 0.2.3
+      '@stdlib/assert-is-positive-number': 0.2.3
+      '@stdlib/error-tools-fmtprodmsg': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/random-base-gamma': 0.2.2
+      '@stdlib/string-format': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-write-accessor': 0.2.3
+      '@stdlib/utils-noop': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/random-base-cosine@0.2.2':
+    dependencies:
+      '@stdlib/array-to-json': 0.3.1
+      '@stdlib/assert-has-own-property': 0.2.3
+      '@stdlib/assert-is-function': 0.2.3
+      '@stdlib/assert-is-nan': 0.2.3
+      '@stdlib/assert-is-number': 0.2.3
+      '@stdlib/assert-is-plain-object': 0.2.3
+      '@stdlib/assert-is-positive-number': 0.2.3
+      '@stdlib/error-tools-fmtprodmsg': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/random-base-mt19937': 0.2.3
+      '@stdlib/stats-base-dists-cosine-quantile': 0.3.1
       '@stdlib/string-format': 0.2.3
       '@stdlib/utils-constant-function': 0.2.3
       '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
@@ -6548,6 +7199,25 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/random-base-invgamma@0.2.2':
+    dependencies:
+      '@stdlib/array-to-json': 0.3.1
+      '@stdlib/assert-has-own-property': 0.2.3
+      '@stdlib/assert-is-function': 0.2.3
+      '@stdlib/assert-is-plain-object': 0.2.3
+      '@stdlib/assert-is-positive-number': 0.2.3
+      '@stdlib/error-tools-fmtprodmsg': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/random-base-gamma': 0.2.2
+      '@stdlib/string-format': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-write-accessor': 0.2.3
+      '@stdlib/utils-noop': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/random-base-laplace@0.2.2':
     dependencies:
       '@stdlib/array-to-json': 0.3.1
@@ -6563,6 +7233,28 @@ snapshots:
       '@stdlib/math-base-special-ln': 0.2.5
       '@stdlib/math-base-special-signum': 0.2.3
       '@stdlib/random-base-mt19937': 0.2.3
+      '@stdlib/string-format': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-write-accessor': 0.2.3
+      '@stdlib/utils-noop': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/random-base-levy@0.2.2':
+    dependencies:
+      '@stdlib/array-to-json': 0.3.1
+      '@stdlib/assert-has-own-property': 0.2.3
+      '@stdlib/assert-is-function': 0.2.3
+      '@stdlib/assert-is-nan': 0.2.3
+      '@stdlib/assert-is-number': 0.2.3
+      '@stdlib/assert-is-plain-object': 0.2.3
+      '@stdlib/assert-is-positive-number': 0.2.3
+      '@stdlib/error-tools-fmtprodmsg': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/random-base-mt19937': 0.2.3
+      '@stdlib/stats-base-dists-normal-quantile': 0.3.1
       '@stdlib/string-format': 0.2.3
       '@stdlib/utils-constant-function': 0.2.3
       '@stdlib/utils-define-nonenumerable-read-only-accessor': 0.2.4
@@ -6820,6 +7512,72 @@ snapshots:
     dependencies:
       '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
 
+  '@stdlib/stats-base-dists-beta-cdf@0.2.3':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-betainc': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-beta-logpdf@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-betaln': 0.3.1
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/math-base-special-log1p': 0.2.4
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-beta-quantile@0.2.3':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-betaincinv': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-betaprime-cdf@0.2.3':
+    dependencies:
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/stats-base-dists-beta-cdf': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-betaprime-logpdf@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-betaln': 0.3.1
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/math-base-special-log1p': 0.2.4
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-betaprime-quantile@0.2.3':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-betaincinv': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/stats-base-dists-cauchy-cdf@0.3.1':
     dependencies:
       '@stdlib/math-base-assert-is-infinite': 0.2.3
@@ -6858,10 +7616,99 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/stats-base-dists-chi-cdf@0.3.1':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/stats-base-dists-degenerate-cdf': 0.3.1
+      '@stdlib/stats-base-dists-gamma-cdf': 0.3.1
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-chi-logpdf@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-ln-two': 0.2.3
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-binary': 0.3.3
+      '@stdlib/math-base-special-gammaln': 0.3.1
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/stats-base-dists-degenerate-logpdf': 0.3.1
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-chi-quantile@0.2.3':
+    dependencies:
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/stats-base-dists-gamma-quantile': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/stats-base-dists-chisquare-cdf@0.3.1':
     dependencies:
       '@stdlib/math-base-napi-binary': 0.3.3
       '@stdlib/stats-base-dists-gamma-cdf': 0.3.1
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-chisquare-logpdf@0.2.3':
+    dependencies:
+      '@stdlib/stats-base-dists-gamma-logpdf': 0.3.1
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-chisquare-quantile@0.2.3':
+    dependencies:
+      '@stdlib/stats-base-dists-gamma-quantile': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-cosine-cdf@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-pi': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-sinpi': 0.3.1
+      '@stdlib/stats-base-dists-degenerate-cdf': 0.3.1
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-cosine-logpdf@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/constants-float64-pinf': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-cospi': 0.4.1
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/stats-base-dists-degenerate-logpdf': 0.3.1
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-cosine-quantile@0.3.1':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/stats-base-dists-cosine-cdf': 0.3.1
+      '@stdlib/stats-base-dists-degenerate-quantile': 0.3.1
+      '@stdlib/utils-constant-function': 0.2.3
       '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
       '@stdlib/utils-library-manifest': 0.2.4
     transitivePeerDependencies:
@@ -7061,6 +7908,39 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@stdlib/stats-base-dists-invgamma-cdf@0.3.1':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-gammainc': 0.3.1
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-invgamma-logpdf@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-gammaln': 0.3.1
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-invgamma-quantile@0.2.3':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-special-gammaincinv': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+    transitivePeerDependencies:
+      - supports-color
+
   '@stdlib/stats-base-dists-laplace-cdf@0.3.1':
     dependencies:
       '@stdlib/math-base-assert-is-nan': 0.2.3
@@ -7091,6 +7971,42 @@ snapshots:
       '@stdlib/math-base-special-abs': 0.2.3
       '@stdlib/math-base-special-ln': 0.2.5
       '@stdlib/math-base-special-signum': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-levy-cdf@0.3.1':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-erfc': 0.2.5
+      '@stdlib/math-base-special-sqrt': 0.2.3
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-levy-logpdf@0.3.1':
+    dependencies:
+      '@stdlib/constants-float64-ln-two-pi': 0.2.3
+      '@stdlib/constants-float64-ninf': 0.2.3
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-ln': 0.2.5
+      '@stdlib/utils-constant-function': 0.2.3
+      '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
+      '@stdlib/utils-library-manifest': 0.2.4
+    transitivePeerDependencies:
+      - supports-color
+
+  '@stdlib/stats-base-dists-levy-quantile@0.3.1':
+    dependencies:
+      '@stdlib/math-base-assert-is-nan': 0.2.3
+      '@stdlib/math-base-napi-ternary': 0.3.2
+      '@stdlib/math-base-special-erfcinv': 0.2.4
       '@stdlib/utils-constant-function': 0.2.3
       '@stdlib/utils-define-nonenumerable-read-only-property': 0.2.3
       '@stdlib/utils-library-manifest': 0.2.4

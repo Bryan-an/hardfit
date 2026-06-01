@@ -123,6 +123,20 @@ describe('makeSampler: Batch A sampler↔quantile convention guards', () => {
     expectSamplerMatchesQuantile(DistributionName.Frechet, { shape: 3, scale: 2 }))
 })
 
+describe('makeSampler: Batch B sampler↔quantile convention guards', () => {
+  it('levy(c) — moment-less (mu fixed 0), median/IQR', () =>
+    expectSamplerMatchesQuantile(DistributionName.Levy, { c: 2 }))
+  it('chisquare(df)', () => expectSamplerMatchesQuantile(DistributionName.ChiSquared, { df: 5 }))
+  it('chi(k)', () => expectSamplerMatchesQuantile(DistributionName.Chi, { k: 4 }))
+  it('invgamma(shape, SCALE=beta) — heavy tail, median/IQR', () =>
+    expectSamplerMatchesQuantile(DistributionName.InvGamma, { shape: 4, scale: 3 }))
+  it('betaprime(alpha, beta) — heavy tail, median/IQR', () =>
+    expectSamplerMatchesQuantile(DistributionName.BetaPrime, { alpha: 5, beta: 4 }))
+  it('cosine(mu, s)', () => expectSamplerMatchesQuantile(DistributionName.Cosine, { mu: 3, s: 2 }))
+  it('beta(alpha, beta) — support (0,1)', () =>
+    expectSamplerMatchesQuantile(DistributionName.Beta, { alpha: 2, beta: 5 }))
+})
+
 describe('makeSampler: reproducibility + guards', () => {
   it('same seed → identical first draws', () => {
     const params = { shape: 3, rate: 1.5, scale: 1 / 1.5 }

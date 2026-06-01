@@ -100,6 +100,8 @@ const CLOSED_FORM_NAMES: readonly string[] = [
   DistributionName.Uniform,
   DistributionName.Rayleigh,
   DistributionName.Pareto,
+  // M2.3 Batch B closed-form MLE family (Lévy: c = n/Σ(1/x); params 1e-9 + LL floor).
+  DistributionName.Levy,
 ]
 
 for (const distName of Object.values(DistributionName)) {
