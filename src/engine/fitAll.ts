@@ -1,6 +1,6 @@
 import { MIN_FIT_SAMPLE_SIZE } from './constants'
 import { DISTRIBUTIONS } from './distributions/index'
-import { ksStatistic } from './gof'
+import { goodnessOfFit } from './goodnessOfFit'
 import { aic, aicc, bic, logLik, rankByAICc } from './selection'
 import type { Fit, FitAllResult, FitFailure, RankedFit } from './types'
 
@@ -33,7 +33,8 @@ export function fitAll(data: readonly number[], opts: FitAllOptions = {}): FitAl
         aic: aic(ll, dist.k),
         aicc: aicc(ll, dist.k, n),
         bic: bic(ll, dist.k, n),
-        ks: ksStatistic(data, (x) => dist.cdf(x, params)),
+        // Full GoF battery (KS/AD/CvM + quantile-binned χ²), routed by dist.kind.
+        ...goodnessOfFit(dist, data, params),
       })
     } catch (e) {
       failures.push({

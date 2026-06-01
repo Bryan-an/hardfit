@@ -1,5 +1,6 @@
 import cdf from '@stdlib/stats-base-dists-exponential-cdf'
 import logpdf from '@stdlib/stats-base-dists-exponential-logpdf'
+import quantile from '@stdlib/stats-base-dists-exponential-quantile'
 import { mean } from '../math'
 import { type Distribution, DistributionName, type FittedParams } from '../types'
 
@@ -28,6 +29,7 @@ export const exponential: Distribution = {
   name: DistributionName.Exponential,
   label: 'Exponential',
   k: 1,
+  kind: 'continuous',
   fit(data): ExponentialParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`exponential: need n >= ${MIN_SAMPLE_SIZE}`)
     if (data.some((v) => v < 0)) throw new Error('exponential requires all x >= 0')
@@ -42,5 +44,9 @@ export const exponential: Distribution = {
   cdf(x: number, p: FittedParams): number {
     const { rate } = p as ExponentialParams
     return cdf(x, rate)
+  },
+  quantile(prob: number, p: FittedParams): number {
+    const { rate } = p as ExponentialParams
+    return quantile(prob, rate)
   },
 }

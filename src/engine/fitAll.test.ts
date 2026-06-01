@@ -22,11 +22,20 @@ describe('fitAll', () => {
     expect(aiccs).toEqual(sortedAiccs)
     const wsum = res.ranked.reduce((s, r) => s + r.weight, 0)
     expect(Math.abs(wsum - 1)).toBeLessThan(1e-9)
-    // each ranked fit carries finite diagnostics
+    // each ranked fit carries finite diagnostics + a populated GoF battery
     for (const r of res.ranked) {
       expect(Number.isFinite(r.logLik)).toBe(true)
       expect(Number.isFinite(r.aic)).toBe(true)
       expect(r.ks).toBeGreaterThanOrEqual(0)
+      // AD raw A² is finite even when its p-value is diagnostic/null (e.g. gamma).
+      expect(Number.isFinite(r.ad.statistic)).toBe(true)
+      // CvM is diagnostic-only until the M2.2 bootstrap.
+      expect(Number.isFinite(r.cvm.statistic)).toBe(true)
+      expect(r.cvm.pValue).toBeNull()
+      // χ² carries an integer df + bin count; its p-value is null when df < 1 (k=2 fits at n=18).
+      expect(Number.isInteger(r.chiSquared.df)).toBe(true)
+      expect(r.chiSquared.bins).toBeGreaterThanOrEqual(2)
+      expect(Number.isFinite(r.chiSquared.statistic)).toBe(true)
     }
   })
   it('reports failures (not crashes) when a distribution rejects the data', () => {

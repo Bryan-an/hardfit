@@ -7,6 +7,9 @@ import { lognormal } from './lognormal'
  *  engine-wide `FittedParams` (Record<string, number>) DTO, so a narrowing cast is expected. */
 type LognormalParams = { mu: number; sigma: number }
 
+/** Probabilities the quantile↔cdf round-trip is checked at (away from the 0/1 tails). */
+const ROUND_TRIP_PROBS = [0.1, 0.5, 0.9]
+
 describe('lognormal', () => {
   it('fits Normal on ln(x): for data=[1, e, e^2] -> mu=1, sigma^2=2/3', () => {
     // ln -> [0,1,2], mean 1, population variance (÷3) = 2/3
@@ -23,5 +26,14 @@ describe('lognormal', () => {
     expectClose(lognormal.logpdf(Math.E, { mu: 0, sigma: 1 }), expected, 1e-9)
   })
   it('cdf(median=e^mu)=0.5', () => expectClose(lognormal.cdf(Math.E, { mu: 1, sigma: 0.5 }), 0.5))
+  it('quantile(0.5) = e^mu (median)', () =>
+    expectClose(lognormal.quantile(0.5, { mu: 1, sigma: 0.5 }), Math.E))
+  it('quantile inverts cdf (round-trip)', () => {
+    const p = { mu: 1, sigma: 0.5 }
+    for (const prob of ROUND_TRIP_PROBS) {
+      expectClose(lognormal.cdf(lognormal.quantile(prob, p), p), prob, 1e-7)
+    }
+  })
   it('k = 2', () => expect(lognormal.k).toBe(2))
+  it("kind = 'continuous'", () => expect(lognormal.kind).toBe('continuous'))
 })

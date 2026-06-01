@@ -1,5 +1,6 @@
 import cdf from '@stdlib/stats-base-dists-weibull-cdf'
 import logpdf from '@stdlib/stats-base-dists-weibull-logpdf'
+import quantile from '@stdlib/stats-base-dists-weibull-quantile'
 import { MAX_NEWTON_ITERATIONS, NEWTON_REL_TOL } from '../constants'
 import { meanLog } from '../math'
 import { type Distribution, DistributionName, type FittedParams } from '../types'
@@ -33,6 +34,7 @@ export const weibull: Distribution = {
   name: DistributionName.Weibull,
   label: 'Weibull',
   k: 2,
+  kind: 'continuous',
   fit(data): WeibullParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`weibull: need n >= ${MIN_SAMPLE_SIZE}`)
     if (data.some((v) => v <= 0)) throw new Error('weibull requires all x > 0')
@@ -79,5 +81,9 @@ export const weibull: Distribution = {
   cdf(x: number, p: FittedParams): number {
     const { shape, scale } = p as WeibullParams
     return cdf(x, shape, scale) // lambda = SCALE, not rate
+  },
+  quantile(prob: number, p: FittedParams): number {
+    const { shape, scale } = p as WeibullParams
+    return quantile(prob, shape, scale) // lambda = SCALE, not rate
   },
 }

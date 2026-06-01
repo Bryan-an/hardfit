@@ -9,6 +9,9 @@ import { normal } from './normal'
  *  `FittedParams` (Record<string, number>) DTO, so a narrowing cast is expected here. */
 type NormalParams = { mu: number; sigma: number }
 
+/** Probabilities the quantile↔cdf round-trip is checked at (away from the 0/1 tails). */
+const ROUND_TRIP_PROBS = [0.1, 0.5, 0.9]
+
 describe('normal', () => {
   it('MLE: mu=mean, sigma=sqrt(population variance) (÷n)', () => {
     const data = [2, 4, 4, 4, 5, 5, 7, 9]
@@ -35,5 +38,13 @@ describe('normal', () => {
       ),
     )
   })
+  it('quantile(0.5) = mu (median)', () => expectClose(normal.quantile(0.5, { mu: 5, sigma: 2 }), 5))
+  it('quantile inverts cdf (round-trip)', () => {
+    const p = { mu: 5, sigma: 2 }
+    for (const prob of ROUND_TRIP_PROBS) {
+      expectClose(normal.cdf(normal.quantile(prob, p), p), prob, 1e-7)
+    }
+  })
   it('k = 2', () => expect(normal.k).toBe(2))
+  it("kind = 'continuous'", () => expect(normal.kind).toBe('continuous'))
 })
