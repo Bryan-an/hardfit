@@ -4,17 +4,21 @@ import cauchySampler from '@stdlib/random-base-cauchy'
 import chiSampler from '@stdlib/random-base-chi'
 import chisquareSampler from '@stdlib/random-base-chisquare'
 import cosineSampler from '@stdlib/random-base-cosine'
+import discreteUniformSampler from '@stdlib/random-base-discrete-uniform'
 import exponentialSampler from '@stdlib/random-base-exponential'
 import frechetSampler from '@stdlib/random-base-frechet'
 import gammaSampler from '@stdlib/random-base-gamma'
+import geometricSampler from '@stdlib/random-base-geometric'
 import gumbelSampler from '@stdlib/random-base-gumbel'
 import invgammaSampler from '@stdlib/random-base-invgamma'
 import laplaceSampler from '@stdlib/random-base-laplace'
 import levySampler from '@stdlib/random-base-levy'
 import logisticSampler from '@stdlib/random-base-logistic'
 import lognormalSampler from '@stdlib/random-base-lognormal'
+import negativeBinomialSampler from '@stdlib/random-base-negative-binomial'
 import normalSampler from '@stdlib/random-base-normal'
 import paretoSampler from '@stdlib/random-base-pareto-type1'
+import poissonSampler from '@stdlib/random-base-poisson'
 import rayleighSampler from '@stdlib/random-base-rayleigh'
 import uniformSampler from '@stdlib/random-base-uniform'
 import weibullSampler from '@stdlib/random-base-weibull'
@@ -50,6 +54,11 @@ type InvGammaParams = { shape: number; scale: number } // alpha=shape, beta=scal
 type BetaPrimeParams = { alpha: number; beta: number }
 type CosineParams = { mu: number; s: number }
 type BetaParams = { alpha: number; beta: number }
+// M2.3 Batch C — discrete; integer draws.
+type PoissonParams = { lambda: number }
+type GeometricParams = { p: number }
+type NegativeBinomialParams = { r: number; p: number }
+type DiscreteUniformParams = { a: number; b: number }
 
 /** Fréchet's location is fixed at 0 in HardFit (a 2-parameter Fréchet); the sampler's 3rd
  *  positional arg is that location `m`. Named to avoid a bare 0 literal in the factory call. */
@@ -151,6 +160,22 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
     case DistributionName.Beta: {
       const { alpha, beta } = p as BetaParams
       return betaSampler.factory(alpha, beta, { seed }) // two shapes, support (0,1)
+    }
+    case DistributionName.Poisson: {
+      const { lambda } = p as PoissonParams
+      return poissonSampler.factory(lambda, { seed }) // integer draws on {0,1,2,…}
+    }
+    case DistributionName.Geometric: {
+      const { p: prob } = p as GeometricParams
+      return geometricSampler.factory(prob, { seed }) // {0,1,…} failures convention
+    }
+    case DistributionName.NegativeBinomial: {
+      const { r, p: prob } = p as NegativeBinomialParams
+      return negativeBinomialSampler.factory(r, prob, { seed }) // (r, p); 0-based failures
+    }
+    case DistributionName.DiscreteUniform: {
+      const { a, b } = p as DiscreteUniformParams
+      return discreteUniformSampler.factory(a, b, { seed }) // inclusive integers {a,…,b}
     }
     default:
       throw new Error(`makeSampler: no sampler for '${name}'`)

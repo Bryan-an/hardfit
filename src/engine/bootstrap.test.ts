@@ -3,6 +3,7 @@ import { bcaCI, bootstrapFit, jackknife, percentileCI } from './bootstrap'
 import { BCA_JACKKNIFE_MAX_N } from './constants'
 import { exponential } from './distributions/exponential'
 import { normal } from './distributions/normal'
+import { poisson } from './distributions/poisson'
 import { mean } from './math'
 import { makeSampler } from './sampling'
 import type { Distribution, FittedParams } from './types'
@@ -163,14 +164,18 @@ describe('bootstrapFit (fused CIs + GoF p-values)', () => {
     const expFit = exponential.fit(normalData)
     const bad = await bootstrapFit(exponential, normalData, expFit, { B, alpha: ALPHA, seed: SEED })
 
+    // Continuous fits always carry GoF p-values (only discrete fits null them out).
+    const goodGof = good.gofPValues
+    const badGof = bad.gofPValues
+    if (goodGof === null || badGof === null) throw new Error('continuous fit must have gofPValues')
     // Direction-based bounds (each bootstrap GoF p is ~Uniform under a correct model):
-    expect(good.gofPValues.ks).toBeGreaterThan(0.1)
-    expect(good.gofPValues.ad).toBeGreaterThan(0.1)
-    expect(good.gofPValues.cvm).toBeGreaterThan(0.1)
-    expect(bad.gofPValues.ks).toBeLessThan(0.05)
-    expect(bad.gofPValues.ad).toBeLessThan(0.05)
-    expect(bad.gofPValues.cvm).toBeLessThan(0.05)
-    expect(good.gofPValues.ks).toBeGreaterThan(bad.gofPValues.ks)
+    expect(goodGof.ks).toBeGreaterThan(0.1)
+    expect(goodGof.ad).toBeGreaterThan(0.1)
+    expect(goodGof.cvm).toBeGreaterThan(0.1)
+    expect(badGof.ks).toBeLessThan(0.05)
+    expect(badGof.ad).toBeLessThan(0.05)
+    expect(badGof.cvm).toBeLessThan(0.05)
+    expect(goodGof.ks).toBeGreaterThan(badGof.ks)
   })
 
   it('CANCELLATION: an isCancelled that returns true throws (checked at the first chunk)', async () => {
@@ -226,9 +231,26 @@ describe('bootstrapFit (fused CIs + GoF p-values)', () => {
     })
     expect(refits).toBe(20) // every replicate attempted the (throwing) refit
     // All replicates skipped → empty reps → finite p-values, percentile-only CIs.
-    expect(result.gofPValues.ks).toBeCloseTo(1 / (20 + 1), INVARIANT_PLACES)
+    expect(result.gofPValues).not.toBeNull()
+    expect(result.gofPValues?.ks).toBeCloseTo(1 / (20 + 1), INVARIANT_PLACES)
     for (const ci of Object.values(result.paramCIs)) {
       expect(ci.method).toBe('percentile')
     }
+  })
+
+  it('discrete fit: param CIs are computed but GoF resampling is skipped (gofPValues null)', async () => {
+    // The Batch C kind-branch: a discrete law's EDF statistics are invalid under ties, so the
+    // bootstrap must NOT resample them (that would yield a spurious ~1/(B+1) p-value); it still
+    // produces parameter confidence intervals from the refitted integer replicates.
+    const counts = [0, 1, 2, 1, 3, 0, 2, 1, 4, 2, 1, 0, 3, 2, 1, 2, 0, 1, 3, 1, 2, 1, 0, 2, 1]
+    const fitted = poisson.fit(counts)
+    const result = await bootstrapFit(poisson, counts, fitted, { B: 200, alpha: ALPHA, seed: 7 })
+    expect(result.gofPValues).toBeNull() // χ² keeps its table p-value; no EDF bootstrap
+    const lambdaCI = result.paramCIs.lambda
+    if (!lambdaCI) throw new Error('expected a lambda CI')
+    // A finite, ordered interval bracketing the point estimate (λ̂ ≈ 1.44).
+    expect(lambdaCI.bca[0]).toBeLessThanOrEqual(lambdaCI.point)
+    expect(lambdaCI.point).toBeLessThanOrEqual(lambdaCI.bca[1])
+    expect(Number.isFinite(lambdaCI.bca[0]) && Number.isFinite(lambdaCI.bca[1])).toBe(true)
   })
 })

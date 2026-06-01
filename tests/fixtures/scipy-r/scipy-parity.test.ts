@@ -2,7 +2,13 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DISTRIBUTIONS } from '../../../src/engine/distributions/index'
-import { adStatistic, chiSquaredGof, cramerVonMises, ksStatistic } from '../../../src/engine/gof'
+import {
+  adStatistic,
+  chiSquaredGof,
+  chiSquaredGofDiscrete,
+  cramerVonMises,
+  ksStatistic,
+} from '../../../src/engine/gof'
 import { logLik } from '../../../src/engine/selection'
 import type { Distribution, FittedParams } from '../../../src/engine/types'
 import { DistributionName } from '../../../src/engine/types'
@@ -41,18 +47,29 @@ const AICC_INFINITY_SENTINEL = 'Infinity'
 
 // --- Fixture shape ---------------------------------------------------------
 
+/** One discrete chi-square cell from the gen_fixtures oracle; `hi` is the "Infinity" sentinel
+ *  string for the unbounded upper-tail cell. */
+interface DiscreteCellOracle {
+  lo: number
+  hi: number | string
+  observed: number
+  expected: number
+}
 interface ChiSquaredOracle {
   bins: number
-  edges: number[]
-  observed: number[]
-  expected: number
   df: number
   statistic: number
+  // Continuous (equiprobable) fixtures carry edges + a scalar expected; discrete fixtures carry cells.
+  edges?: number[]
+  observed?: number[]
+  expected?: number
+  cells?: DiscreteCellOracle[]
 }
 interface ModeB {
-  ks: number
-  adRaw: number
-  cvm: number
+  // Discrete fixtures emit null for the EDF tests (invalid under ties); continuous emit numbers.
+  ks: number | null
+  adRaw: number | null
+  cvm: number | null
   chiSquared: ChiSquaredOracle
 }
 interface ModeA {
@@ -102,12 +119,24 @@ const CLOSED_FORM_NAMES: readonly string[] = [
   DistributionName.Pareto,
   // M2.3 Batch B closed-form MLE family (Lévy: c = n/Σ(1/x); params 1e-9 + LL floor).
   DistributionName.Levy,
+  // M2.3 Batch C closed-form discrete MLE families (Negative-Binomial is iterative → LL-only).
+  DistributionName.Poisson,
+  DistributionName.Geometric,
+  DistributionName.DiscreteUniform,
 ]
+
+/** Decode a discrete-cell upper bound: the gen_fixtures oracle emits the unbounded tail's `hi`
+ *  as the string "Infinity"; the engine uses `Number.POSITIVE_INFINITY`. */
+function decodeCellHi(hi: number | string): number {
+  return hi === AICC_INFINITY_SENTINEL ? Number.POSITIVE_INFINITY : (hi as number)
+}
 
 for (const distName of Object.values(DistributionName)) {
   const file = loadFixture(distName)
   const dist = distributionByName(distName)
   const isClosedForm = CLOSED_FORM_NAMES.includes(distName)
+
+  const isDiscrete = dist.kind === 'discrete'
 
   describe(`scipy parity — ${distName} (numpy ${file.manifest.numpy}, scipy ${file.manifest.scipy})`, () => {
     for (const fx of file.fixtures) {
@@ -116,36 +145,68 @@ for (const distName of Object.values(DistributionName)) {
         const cdf = (x: number): number => dist.cdf(x, fx.fixedParams)
         const quantile = (prob: number): number => dist.quantile(prob, fx.fixedParams)
 
-        it('KS D matches scipy at fixed params', () => {
-          expectClose(ksStatistic(fx.data, cdf), fx.modeB.ks, PARITY_RTOL)
-        })
-        it('raw A² matches scipy at fixed params', () => {
-          expectClose(adStatistic(fx.data, cdf), fx.modeB.adRaw, PARITY_RTOL)
-        })
-        it('Cramér-von Mises n·ω² matches scipy at fixed params', () => {
-          expectClose(cramerVonMises(fx.data, cdf), fx.modeB.cvm, PARITY_RTOL)
-        })
-        it('chi-square binning shape + edges + statistic match scipy at fixed params', () => {
-          const oracle = fx.modeB.chiSquared
-          const got = chiSquaredGof(fx.data, quantile, dist.k)
-          // Binning shape is the hard coupling — must match exactly.
-          expect(got.bins).toBe(oracle.bins)
-          expect(got.df).toBe(oracle.df)
-          expect(oracle.edges.length).toBe(oracle.bins - 1)
-          // Assert the equiprobable edges Q(j/k) at machine precision. This pins the binning
-          // (equal edges + no datum within 1e-9 of an edge ⇒ identical observed counts) AND
-          // directly exercises the quantile-slot mapping (gamma RATE / weibull SCALE), which
-          // the cdf-based checks only cover indirectly.
-          for (let j = 1; j < oracle.bins; j++) {
-            const oracleEdge = oracle.edges[j - 1]
-            expect(oracleEdge, `missing oracle edge ${j}`).toBeTypeOf('number')
-            expectClose(quantile(j / oracle.bins), oracleEdge as number, PARITY_RTOL)
-          }
-          // The statistic itself is a softer, binning-coupled gate: a near-edge bin flip
-          // between scipy.ppf and @stdlib.quantile could shift it without indicating a bug.
-          // With the edges pinned above this is belt-and-suspenders, hence the looser tol.
-          expectClose(got.statistic, oracle.statistic, CHI_SQUARED_RTOL)
-        })
+        if (!isDiscrete) {
+          it('KS D matches scipy at fixed params', () => {
+            expectClose(ksStatistic(fx.data, cdf), fx.modeB.ks as number, PARITY_RTOL)
+          })
+          it('raw A² matches scipy at fixed params', () => {
+            expectClose(adStatistic(fx.data, cdf), fx.modeB.adRaw as number, PARITY_RTOL)
+          })
+          it('Cramér-von Mises n·ω² matches scipy at fixed params', () => {
+            expectClose(cramerVonMises(fx.data, cdf), fx.modeB.cvm as number, PARITY_RTOL)
+          })
+          it('chi-square binning shape + edges + statistic match scipy at fixed params', () => {
+            const oracle = fx.modeB.chiSquared
+            const edges = oracle.edges ?? []
+            const got = chiSquaredGof(fx.data, quantile, dist.k)
+            // Binning shape is the hard coupling — must match exactly.
+            expect(got.bins).toBe(oracle.bins)
+            expect(got.df).toBe(oracle.df)
+            expect(edges.length).toBe(oracle.bins - 1)
+            // Assert the equiprobable edges Q(j/k) at machine precision. This pins the binning
+            // (equal edges + no datum within 1e-9 of an edge ⇒ identical observed counts) AND
+            // directly exercises the quantile-slot mapping (gamma RATE / weibull SCALE), which
+            // the cdf-based checks only cover indirectly.
+            for (let j = 1; j < oracle.bins; j++) {
+              const oracleEdge = edges[j - 1]
+              expect(oracleEdge, `missing oracle edge ${j}`).toBeTypeOf('number')
+              expectClose(quantile(j / oracle.bins), oracleEdge as number, PARITY_RTOL)
+            }
+            // The statistic itself is a softer, binning-coupled gate: a near-edge bin flip
+            // between scipy.ppf and @stdlib.quantile could shift it without indicating a bug.
+            // With the edges pinned above this is belt-and-suspenders, hence the looser tol.
+            expectClose(got.statistic, oracle.statistic, CHI_SQUARED_RTOL)
+          })
+        } else {
+          it('discrete PMF-binned χ² cells + observed + expected match scipy at fixed params', () => {
+            const oracle = fx.modeB.chiSquared
+            const cells = oracle.cells ?? []
+            const pmf = (x: number): number => Math.exp(dist.logpdf(x, fx.fixedParams))
+            const support = dist.support?.(fx.fixedParams) ?? {
+              min: 0,
+              max: Number.POSITIVE_INFINITY,
+            }
+            const got = chiSquaredGofDiscrete(fx.data, pmf, cdf, support.min, support.max, dist.k)
+            // Pin the binning itself, not just the statistic: cell count, edges, observed counts,
+            // and expected counts must match the gen_fixtures.py mirror exactly (the batch's #1
+            // correctness risk — a TS/Python merge divergence surfaces here).
+            expect(got.bins).toBe(oracle.bins)
+            expect(got.df).toBe(oracle.df)
+            expect(got.cells.length).toBe(cells.length)
+            for (let i = 0; i < cells.length; i++) {
+              const oc = cells[i]
+              const gc = got.cells[i]
+              expect(oc, `missing oracle cell ${i}`).toBeTypeOf('object')
+              if (oc === undefined || gc === undefined) continue
+              expect(gc.lo).toBe(oc.lo)
+              expect(decodeCellHi(gc.hi)).toBe(decodeCellHi(oc.hi))
+              expect(gc.observed).toBe(oc.observed)
+              expectClose(gc.expected, oc.expected, PARITY_RTOL)
+            }
+            // With cells pinned, the statistic can be asserted tightly.
+            expectClose(got.statistic, oracle.statistic, PARITY_RTOL)
+          })
+        }
 
         // Mode A: fit-from-data.
         it(`fit-from-data ${isClosedForm ? 'reproduces the analytic MLE' : "is at least as good as scipy's"}`, () => {

@@ -57,3 +57,28 @@ test('fits the sample dataset end-to-end and renders ranked table + chart', asyn
 
   expect(errors).toEqual([]) // no CSP violations / runtime errors (worker + Plotly + bootstrap under script-src 'self')
 })
+
+test('fits discrete distributions on integer count data under the real CSP', async ({ page }) => {
+  const errors: string[] = []
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text())
+  })
+  page.on('pageerror', (e) => errors.push(e.message))
+
+  await page.goto('/')
+  // Integer counts (overdispersed) so the discrete families fit; the demo "Load sample" is
+  // continuous (all discrete dists N/A there), so type counts directly to exercise the discrete path.
+  const counts = '0 1 2 5 3 0 4 2 1 6 0 3 8 1 2 4 0 5 1 3 2 7 0 1 4'
+  await page.getByLabel('Data values').fill(counts)
+  await page.getByRole('button', { name: 'Fit distributions' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Ranked fits (by AICc)' })).toBeVisible({
+    timeout: 15_000,
+  })
+  // A discrete distribution ranks (Poisson is always applicable to non-negative integer counts).
+  await expect(page.getByText('Poisson', { exact: true })).toBeVisible()
+  // χ² header present; the worker round-trip + bootstrap complete with no CSP/runtime errors.
+  await expect(page.getByRole('columnheader', { name: 'χ²' })).toBeVisible()
+  await expect(page.locator('.plotly').first()).toBeVisible({ timeout: 30_000 })
+  expect(errors).toEqual([])
+})

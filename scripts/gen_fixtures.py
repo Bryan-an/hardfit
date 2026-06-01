@@ -36,6 +36,7 @@ See tests/fixtures/README.md for the full mapping table and the CI rule.
 from __future__ import annotations
 
 import json
+import math
 import platform
 import sys
 from pathlib import Path
@@ -120,10 +121,34 @@ UNIT_TINY_3 = [0.3, 0.5, 0.7]
 # Bounded-(0,1) families (M2.3 Batch B) that use the unit-interval datasets instead of the positives.
 UNIT_INTERVAL_FAMILIES = {"beta"}
 
+# --- M2.3 Batch C: integer COUNT datasets (the continuous datasets are out-of-support for discrete
+# fits — non-integer values make logPMF -> -inf). Each discrete family gets count data on its own
+# support; values are stored as ints so the engine and the discrete chi-square round-trip them.
+POISSON_COUNTS = [0, 1, 2, 1, 3, 0, 2, 1, 4, 2, 1, 0, 3, 2, 1, 2, 0, 1, 3, 1, 2, 1, 0, 2, 1]  # n=25
+GEOM_COUNTS = [0, 1, 0, 2, 3, 0, 1, 1, 4, 0, 2, 1, 0, 1, 2, 0, 3, 1, 0, 1]  # n=20, {0,1,...} failures
+# OVERDISPERSED (var > mean) — mandatory for a finite negative-binomial MLE.
+NBINOM_COUNTS = [0, 1, 2, 5, 8, 3, 12, 0, 4, 6, 1, 9, 2, 15, 0, 7, 3, 1, 10, 4, 2, 6, 0, 8, 1, 5, 3, 11, 2, 7]  # n=30
+DISCRETE_UNIFORM_COUNTS = [1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 2, 3, 4, 5, 3, 4, 2, 5]  # n=20, a=1 b=6
+# Tiny integer sets to trip the AICc n<=k+1 sentinel (k=1 -> fires at n=2; k=2 -> n=3).
+COUNT_TINY = [1, 3]  # n=2: sentinel for the k=1 families (poisson, geometric)
+# n=3: sentinel for the k=2 families. MUST be overdispersed (var > mean) so the negative-binomial
+# MLE is finite: [0,1,5] has mean 2, var 4.67. Also valid discrete-uniform data (a=0, b=5).
+COUNT_TINY_3 = [0, 1, 5]
+
+# Per-family discrete datasets (each on its own integer support). Keyed like the other family maps.
+DISCRETE_DATASETS: dict[str, dict[str, list[float]]] = {
+    "poisson": {"count_tiny": COUNT_TINY, "poisson_counts": POISSON_COUNTS},
+    "geometric": {"count_tiny": COUNT_TINY, "geom_counts": GEOM_COUNTS},
+    "negative-binomial": {"count_tiny_3": COUNT_TINY_3, "nbinom_counts": NBINOM_COUNTS},
+    "discrete-uniform": {"count_tiny_3": COUNT_TINY_3, "discrete_uniform_counts": DISCRETE_UNIFORM_COUNTS},
+}
+
 
 def datasets_for(dist_name: str) -> dict[str, list[float]]:
-    """Datasets to emit for a family: the positive set for everyone, the signed set added for the
-    real-support Batch A families, or the unit-interval set for the bounded-(0,1) Batch B families."""
+    """Datasets to emit for a family: integer counts for discrete families, unit-interval for the
+    bounded-(0,1) Batch B family, the signed set for real-support Batch A families, else positives."""
+    if dist_name in DISCRETE_DATASETS:
+        return DISCRETE_DATASETS[dist_name]
     if dist_name in UNIT_INTERVAL_FAMILIES:
         return {"unit_tiny_3": UNIT_TINY_3, "unit_22": UNIT_22}
     if dist_name in REAL_SUPPORT_FAMILIES:
@@ -231,6 +256,118 @@ def aicc_or_sentinel(log_lik_value: float, k: int, n: int) -> float | str:
         return AICC_INFINITY_SENTINEL
     aic = 2 * k - 2 * log_lik_value
     return float(aic + (2 * k * (k + 1)) / (n - k - 1))
+
+
+# --- M2.3 Batch C: DISCRETE goodness-of-fit oracles ------------------------
+#
+# Discrete fits use PMF/count-based chi-square (the EDF tests KS/AD/CvM are invalid under ties).
+# scipy DISCRETE dists have NO .fit, so Mode-A MLEs are analytic (below) and the independent LL
+# cross-check is a formula-free grid scan (grid_scan_loglik). The binning here MIRRORS
+# src/engine/gof.ts chiSquaredGofDiscrete byte-for-byte; the parity gate pins the emitted
+# cells + observed + expected so any divergence fails loudly.
+
+MAX_DISCRETE_SCAN = 100_000  # mirrors gof.ts; defensive cap (the tail -> 0 guarantees termination)
+EXPECTED_EPS = 1e-9  # mirrors gof.ts: slack so an E exactly at MIN merges the same way TS-vs-Python
+
+
+def chi_squared_binning_discrete(
+    data: list[float],
+    pmf: Callable[[int], float],  # P(X = v)
+    cdf: Callable[[int], float],  # F(v) = P(X <= v)
+    support_min: int,
+    support_max: float,  # may be math.inf (unbounded counts)
+    n_params: int,
+) -> dict:
+    """Group-by-integer-value chi-square binning, byte-identical to gof.ts chiSquaredGofDiscrete:
+    walk the support upward accumulating an open cell until BOTH its expected >= MIN and the
+    remaining upper tail n*(1-cdf(v)) >= MIN; fold the open cell + remaining mass into one final
+    cell [openLo, support_max] whose expected is the exact n*(1-cdf(openLo-1)). df = bins-1-n_params.
+    """
+    n = len(data)
+
+    def count_in(lo: int, hi: float) -> int:
+        return int(sum(1 for x in data if lo <= x <= hi))
+
+    cells: list[dict] = []
+    open_lo = support_min
+    acc_expected = 0.0
+    v = support_min
+    while v <= support_max and v < support_min + MAX_DISCRETE_SCAN:
+        acc_expected += n * pmf(v)
+        remaining_tail = n * (1 - cdf(v))  # expected mass strictly above v
+        # -EXPECTED_EPS: mirror gof.ts so an E exactly at MIN merges identically TS-vs-Python.
+        if remaining_tail < MIN_EXPECTED_PER_BIN - EXPECTED_EPS or v >= support_max:
+            break
+        if acc_expected >= MIN_EXPECTED_PER_BIN - EXPECTED_EPS:
+            cells.append(
+                {
+                    "lo": open_lo,
+                    "hi": v,
+                    "observed": count_in(open_lo, v),
+                    "expected": acc_expected,
+                }
+            )
+            open_lo = v + 1
+            acc_expected = 0.0
+        v += 1
+    cells.append(
+        {
+            "lo": open_lo,
+            "hi": support_max if math.isinf(support_max) else int(support_max),
+            "observed": count_in(open_lo, support_max),
+            "expected": n * (1 - cdf(open_lo - 1)),
+        }
+    )
+    statistic = float(sum((c["observed"] - c["expected"]) ** 2 / c["expected"] for c in cells))
+    k = len(cells)
+    df = k - 1 - n_params
+    # JSON cannot carry inf; the unbounded final cell's hi is emitted as the sentinel string.
+    cells_json = [
+        {**c, "hi": "Infinity" if (isinstance(c["hi"], float) and math.isinf(c["hi"])) else c["hi"]}
+        for c in cells
+    ]
+    return {"bins": k, "cells": cells_json, "df": df, "statistic": statistic}
+
+
+def gof_block_discrete(data: list[float], rv, n_params: int, support_min: int, support_max: float) -> dict:
+    """Discrete Mode-B GoF block: PMF-binned chi-square only (KS/AD/CvM are null — invalid for
+    discrete). `rv` is a frozen scipy discrete dist already in HardFit's support convention
+    (e.g. geom(p, loc=-1), randint(a, b+1)), so rv.pmf/rv.cdf at integer v match @stdlib."""
+    return {
+        "ks": None,
+        "adRaw": None,
+        "cvm": None,
+        "chiSquared": chi_squared_binning_discrete(
+            data,
+            lambda v: float(rv.pmf(v)),
+            lambda v: float(rv.cdf(v)),
+            support_min,
+            support_max,
+            n_params,
+        ),
+    }
+
+
+def log_lik_discrete(data: list[float], rv) -> float:
+    """Maximized log-likelihood of a frozen DISCRETE scipy dist (sum of logPMF, not logpdf)."""
+    return float(np.sum(rv.logpmf(np.asarray(data, dtype=float))))
+
+
+def grid_scan_loglik(data: list[float], logpmf_fn: Callable[..., float], grids: list[np.ndarray]) -> float:
+    """Formula-INDEPENDENT log-likelihood floor: the max of sum(logpmf) over a coarse parameter
+    grid. Never calls the MLE formula, so a bug shared between this emitter and the TS engine
+    cannot self-cancel — the engine's fitted LL must still clear this floor. Load-bearing for the
+    iterative discrete families (e.g. negative-binomial); the closed-form ones gate params directly.
+    """
+    arr = np.asarray(data, dtype=float)
+    best = -np.inf
+    meshes = np.meshgrid(*grids, indexing="ij")
+    for idx in np.ndindex(meshes[0].shape):
+        params = [float(m[idx]) for m in meshes]
+        ll = float(np.sum(logpmf_fn(arr, *params)))
+        if np.isfinite(ll) and ll > best:
+            best = ll
+    return best
 
 
 # --- Per-distribution fixture builders -------------------------------------
@@ -698,6 +835,105 @@ def build_beta(data: list[float]) -> dict:
     }
 
 
+# --- M2.3 Batch C discrete builders (analytic MLEs; scipy discrete dists have NO .fit) -----
+
+
+def build_poisson(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    lam = float(np.mean(arr))  # analytic MLE lambda = mean
+    rv = stats.poisson(mu=lam, loc=0)  # IDENTITY: scipy mu == lambda, no shift
+    ll = log_lik_discrete(data, rv)
+    return {
+        "fixedParams": {"lambda": lam},
+        "modeB": gof_block_discrete(data, rv, n_params=1, support_min=0, support_max=math.inf),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"lambda": lam},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 1, n),
+        },
+    }
+
+
+def build_geometric(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    p = float(1.0 / (1.0 + np.mean(arr)))  # analytic MLE for the {0,1,...} (failures) convention
+    # LOAD-BEARING: scipy.geom is native {1,2,...}; loc=-1 shifts it to {0,1,...} to match @stdlib.
+    rv = stats.geom(p, loc=-1)
+    ll = log_lik_discrete(data, rv)
+    return {
+        "fixedParams": {"p": p},
+        "modeB": gof_block_discrete(data, rv, n_params=1, support_min=0, support_max=math.inf),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"p": p},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 1, n),
+        },
+    }
+
+
+def build_negative_binomial(data: list[float]) -> dict:
+    from scipy.special import digamma, polygamma
+
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    xbar = float(np.mean(arr))
+    s2 = float(np.var(arr))  # population variance (ddof=0), matches the engine guard var > mean
+    # Analytic MLE (scipy has no .fit): profile p = r/(r+xbar); solve r by 1-D Newton on the
+    # profile score. Requires overdispersion (s2 > xbar) — else r -> inf (Poisson limit).
+    r = max(1e-3, xbar * xbar / (s2 - xbar)) if s2 > xbar else float("nan")
+    for _ in range(100):
+        g = float(np.sum(digamma(arr + r) - digamma(r)) + n * math.log(r / (r + xbar)))
+        gp = float(np.sum(polygamma(1, arr + r) - polygamma(1, r)) + n * (1.0 / r - 1.0 / (r + xbar)))
+        step = g / gp
+        nxt = r - step
+        if not math.isfinite(nxt) or nxt <= 0:
+            r = r / 2
+            continue
+        r = nxt
+        if abs(step) < 1e-12 * r:
+            break
+    p = r / (r + xbar)
+    rv = stats.nbinom(r, p, loc=0)  # IDENTITY: scipy n==r, p==p, 0-based failures (no shift)
+    # Independent, formula-FREE LL floor: grid scan over (r, p) using scipy's own logpmf.
+    r_grid = np.logspace(-1, 2, 40)
+    p_grid = np.linspace(0.02, 0.98, 40)
+    floor = grid_scan_loglik(data, lambda x, rr, pp: stats.nbinom.logpmf(x, rr, pp), [r_grid, p_grid])
+    return {
+        "fixedParams": {"r": float(r), "p": float(p)},
+        "modeB": gof_block_discrete(data, rv, n_params=2, support_min=0, support_max=math.inf),
+        "modeA": {
+            "form": "iterative",
+            "params": {"r": float(r), "p": float(p)},
+            "logLik": floor,  # the engine's fitted LL must clear this independent grid floor
+            "aicc": aicc_or_sentinel(float(np.sum(rv.logpmf(arr))), 2, n),
+        },
+    }
+
+
+def build_discrete_uniform(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    a = int(np.min(arr))
+    b = int(np.max(arr))
+    # LOAD-BEARING: scipy.randint is half-open {low,...,high-1}; high=b+1 encodes @stdlib's inclusive b.
+    rv = stats.randint(low=a, high=b + 1)
+    ll = log_lik_discrete(data, rv)
+    return {
+        "fixedParams": {"a": float(a), "b": float(b)},
+        "modeB": gof_block_discrete(data, rv, n_params=2, support_min=a, support_max=b),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"a": float(a), "b": float(b)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
@@ -721,6 +957,11 @@ BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "betaprime": build_betaprime,
     "cosine": build_cosine,
     "beta": build_beta,
+    # M2.3 Batch C (discrete)
+    "poisson": build_poisson,
+    "geometric": build_geometric,
+    "negative-binomial": build_negative_binomial,
+    "discrete-uniform": build_discrete_uniform,
 }
 
 

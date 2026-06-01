@@ -136,13 +136,17 @@ export function ResultsTable({
         <tbody>
           {ranked.map((r) => {
             const bs = bootstrap?.[r.name]
+            // `gofPValues` is null for a DISCRETE fit (EDF tests invalid under ties): such rows
+            // keep param CIs (from `bs.paramCIs`) but fall back to the M2.1 diagnostic display for
+            // KS/AD/CvM (their NaN sentinels render as `—`/`diag.`) and show the χ² table p-value.
+            const gp = bs?.gofPValues ?? null
             // With bootstrap p-values, KS gains a secondary it lacks in the M2.1 display and
             // AD/CvM swap their diagnostic/closed-form marker for the rigorous bootstrap p.
-            const ksResult: GofResult = bs
-              ? bootstrapGof(r.ks, bs.gofPValues.ks)
+            const ksResult: GofResult = gp
+              ? bootstrapGof(r.ks, gp.ks)
               : { statistic: r.ks, pValue: null, method: 'diagnostic' }
-            const adResult = bs ? bootstrapGof(r.ad.statistic, bs.gofPValues.ad) : r.ad
-            const cvmResult = bs ? bootstrapGof(r.cvm.statistic, bs.gofPValues.cvm) : r.cvm
+            const adResult = gp ? bootstrapGof(r.ad.statistic, gp.ad) : r.ad
+            const cvmResult = gp ? bootstrapGof(r.cvm.statistic, gp.cvm) : r.cvm
             return (
               <tr key={r.name} className="border-b border-slate-100">
                 <td className="py-1 pr-3">{r.rank}</td>
@@ -158,7 +162,7 @@ export function ResultsTable({
                 <td className="py-1 pr-3">{fmt(r.aicc)}</td>
                 <td className="py-1 pr-3">{fmt(r.deltaAICc)}</td>
                 <td className="py-1 pr-3">{fmt(r.weight)}</td>
-                {bs ? <GofCell result={ksResult} /> : <td className="py-1 pr-3">{fmt(r.ks)}</td>}
+                {gp ? <GofCell result={ksResult} /> : <td className="py-1 pr-3">{fmt(r.ks)}</td>}
                 <td className="py-1 pr-3">{fmt(r.logLik)}</td>
                 <GofCell result={adResult} />
                 <GofCell result={cvmResult} />

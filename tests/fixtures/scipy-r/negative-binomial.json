@@ -1,0 +1,100 @@
+{
+  "distribution": "negative-binomial",
+  "manifest": {
+    "python": "3.14.3",
+    "numpy": "2.3.4",
+    "scipy": "1.17.1"
+  },
+  "fixtures": [
+    {
+      "dataset": "count_tiny_3",
+      "data": [0, 1, 5],
+      "fixedParams": {
+        "r": 0.9742877905795496,
+        "p": 0.3275701139833904
+      },
+      "modeB": {
+        "ks": null,
+        "adRaw": null,
+        "cvm": null,
+        "chiSquared": {
+          "bins": 1,
+          "cells": [
+            {
+              "lo": 0,
+              "hi": "Infinity",
+              "observed": 3,
+              "expected": 3.0
+            }
+          ],
+          "df": -2,
+          "statistic": 0.0
+        }
+      },
+      "modeA": {
+        "form": "iterative",
+        "params": {
+          "r": 0.9742877905795496,
+          "p": 0.3275701139833904
+        },
+        "logLik": -5.729521647885784,
+        "aicc": "Infinity"
+      }
+    },
+    {
+      "dataset": "nbinom_counts",
+      "data": [
+        0, 1, 2, 5, 8, 3, 12, 0, 4, 6, 1, 9, 2, 15, 0, 7, 3, 1, 10, 4, 2, 6, 0, 8, 1, 5, 3, 11, 2, 7
+      ],
+      "fixedParams": {
+        "r": 1.544615173480537,
+        "p": 0.2513770398749984
+      },
+      "modeB": {
+        "ks": null,
+        "adRaw": null,
+        "cvm": null,
+        "chiSquared": {
+          "bins": 4,
+          "cells": [
+            {
+              "lo": 0,
+              "hi": 1,
+              "observed": 8,
+              "expected": 7.6660420537880345
+            },
+            {
+              "lo": 2,
+              "hi": 3,
+              "observed": 7,
+              "expected": 7.378976021857845
+            },
+            {
+              "lo": 4,
+              "hi": 5,
+              "observed": 4,
+              "expected": 5.391322831130328
+            },
+            {
+              "lo": 6,
+              "hi": "Infinity",
+              "observed": 11,
+              "expected": 9.56365909322379
+            }
+          ],
+          "df": 1,
+          "statistic": 0.6087869623754614
+        }
+      },
+      "modeA": {
+        "form": "iterative",
+        "params": {
+          "r": 1.544615173480537,
+          "p": 0.2513770398749984
+        },
+        "logLik": -78.1642016273145,
+        "aicc": 160.7013176847781
+      }
+    }
+  ]
+}

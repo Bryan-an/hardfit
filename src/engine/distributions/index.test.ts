@@ -3,7 +3,7 @@ import { DistributionName } from '../types'
 import { DISTRIBUTIONS } from './index'
 
 describe('DISTRIBUTIONS registry', () => {
-  it('contains the M1 + M2.3 Batch A + Batch B distributions with unique names', () => {
+  it('contains the M1 + M2.3 Batch A + Batch B + Batch C distributions with unique names', () => {
     const names = DISTRIBUTIONS.map((d) => d.name)
     expect(names).toEqual([
       DistributionName.Normal,
@@ -26,16 +26,22 @@ describe('DISTRIBUTIONS registry', () => {
       DistributionName.BetaPrime,
       DistributionName.Cosine,
       DistributionName.Beta,
+      DistributionName.Poisson,
+      DistributionName.Geometric,
+      DistributionName.NegativeBinomial,
+      DistributionName.DiscreteUniform,
     ])
     expect(new Set(names).size).toBe(names.length)
   })
-  it('every entry exposes fit/logpdf/cdf/quantile, a continuous kind, and a k of 1 or 2', () => {
+  it('every entry exposes fit/logpdf/cdf/quantile, a valid kind, and a k of 1 or 2', () => {
     for (const d of DISTRIBUTIONS) {
       expect(typeof d.fit).toBe('function')
       expect(typeof d.logpdf).toBe('function')
       expect(typeof d.cdf).toBe('function')
       expect(typeof d.quantile).toBe('function')
-      expect(d.kind).toBe('continuous')
+      expect(['continuous', 'discrete']).toContain(d.kind)
+      // Discrete distributions must expose integer support bounds for the PMF-binned χ².
+      if (d.kind === 'discrete') expect(typeof d.support).toBe('function')
       expect([1, 2]).toContain(d.k)
     }
   })

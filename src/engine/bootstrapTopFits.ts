@@ -1,5 +1,5 @@
 import type { BootstrapFitResult } from './bootstrap'
-import { bootstrapFit } from './bootstrap'
+import { BootstrapCancelledError, bootstrapFit } from './bootstrap'
 import {
   BOOTSTRAP_SEED_SALT,
   BOOTSTRAP_TOP_K,
@@ -86,13 +86,20 @@ export async function bootstrapTopFits(
       onProgress !== undefined
         ? (frac: number): void => onProgress((doneFits + frac) / k)
         : undefined
-    result[dist.name] = await bootstrapFit(dist, data, fit.params, {
-      B,
-      alpha,
-      seed: deriveFitSeed(opts.seed, i),
-      ...(fitProgress ? { onChunk: fitProgress } : {}),
-      ...(isCancelled ? { isCancelled } : {}),
-    })
+    try {
+      result[dist.name] = await bootstrapFit(dist, data, fit.params, {
+        B,
+        alpha,
+        seed: deriveFitSeed(opts.seed, i),
+        ...(fitProgress ? { onChunk: fitProgress } : {}),
+        ...(isCancelled ? { isCancelled } : {}),
+      })
+    } catch (err) {
+      // A user cancellation must propagate; any other per-fit failure (e.g. a discrete leave-one-out
+      // jackknife subset that is no longer overdispersed) is isolated so the remaining top-k fits
+      // still bootstrap — that fit simply gets no CIs.
+      if (err instanceof BootstrapCancelledError) throw err
+    }
     doneFits++
     onProgress?.(doneFits / k) // completion tick; the last iteration reports exactly 1.
   }
