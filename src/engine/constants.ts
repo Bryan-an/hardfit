@@ -26,3 +26,33 @@ export const BOOTSTRAP_TOP_K = 3
  *  per-fit streams far apart so they are uncorrelated (adjacent indices alone would yield
  *  near-identical seeds — a silent statistical bug). */
 export const BOOTSTRAP_SEED_SALT = 0x9e3779b1
+
+// --- Nelder–Mead general minimizer (Batch D, src/engine/optimize.ts) ---
+/** Hard cap on simplex iterations PER restart. Bounds the only inner loop. NO unbounded while-loop —
+ *  this project lost a session to one in a beta test, so every loop here is a counted `for`. */
+export const NM_MAX_ITERATIONS = 200
+/** Hard cap on objective evaluations across the WHOLE minimize() call (all restarts). Independent of
+ *  the iteration cap: a pathological objective can burn evals without advancing iterations, so the
+ *  eval budget — checked INSIDE the safe-f wrapper — is the true freeze guard. */
+export const NM_MAX_FUNCTION_EVALS = 2000
+/** Restart-from-best count. A restart re-expands a FULL-SIZE fresh simplex around the incumbent best
+ *  and re-searches; this escapes a collapsed simplex AND performs the final polish that clears the
+ *  1e-6 LL parity gate (verified: restart-from-best reaches the closed-form MLE LL to machine zero). */
+export const NM_MAX_RESTARTS = 2
+/** ABSOLUTE simplex-size tolerance (max |coord − bestCoord| over all vertices). Absolute (not
+ *  relative) because the parity gate is absolute in LL units. */
+export const NM_X_TOL = 1e-10
+/** ABSOLUTE objective-spread tolerance f(worst)−f(best). MUST be absolute and well below the 1e-6 LL
+ *  gate; 1e-9 gives ~3 orders of headroom (verified to reach machine-zero LL gap). */
+export const NM_F_TOL = 1e-9
+/** Relative per-coordinate perturbation building the initial simplex from a NONZERO seed coord
+ *  (vertex_i coord_i *= 1+this). scipy's `nonzdelt`; deterministic, no RNG. */
+export const NM_INITIAL_STEP = 0.05
+/** Absolute perturbation for a ZERO seed coord (else a relative bump of 0 gives a degenerate simplex).
+ *  scipy's `zdelt`. */
+export const NM_ZERO_STEP = 0.00025
+/** Standard Nelder–Mead reflection / expansion / contraction / shrink coefficients. */
+export const NM_REFLECTION = 1
+export const NM_EXPANSION = 2
+export const NM_CONTRACTION = 0.5
+export const NM_SHRINK = 0.5
