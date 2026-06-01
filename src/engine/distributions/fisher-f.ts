@@ -25,6 +25,13 @@ const DF_CAP = 1e6
 /** Index into the unconstrained parameter vector θ = [ln d1, ln d2]. */
 const THETA_LOG_D1 = 0
 const THETA_LOG_D2 = 1
+/** Neutral df=1 fallback for a seed coordinate. A finite-LL grid node overwrites it for any valid
+ *  n>=2 strictly-positive sample (at least one of the GRID_STEPS² nodes is finite there), so it only
+ *  reaches the optimizer in the degenerate all-non-finite-LL case — where it gives `minimize` a
+ *  well-defined positive-df origin seed instead of a bare `1`. df=1 is chosen because `ln 1 = 0`, so
+ *  the unconstrained θ = [ln d1, ln d2] seed becomes the clean origin [0, 0]. (Mirrors student-t's
+ *  documented 'fall back to ... then to 1' seed.) */
+const SEED_DF_FALLBACK = 1
 
 /**
  * Fisher–Snedecor F's fitted parameters: `d1` = numerator degrees of freedom (> 0) and `d2` =
@@ -91,8 +98,10 @@ export const fisherF: Distribution = {
     const logLo = Math.log(GRID_LO)
     const logHi = Math.log(GRID_HI)
     const step = (logHi - logLo) / (GRID_STEPS - 1)
-    let seedD1 = 1
-    let seedD2 = 1
+    // Seed both df at the neutral df=1 fallback; the log-grid below overwrites them at the first
+    // finite-LL node (so the fallback only survives the degenerate all-non-finite-LL case).
+    let seedD1 = SEED_DF_FALLBACK
+    let seedD2 = SEED_DF_FALLBACK
     let bestLL = Number.NEGATIVE_INFINITY
     for (let i = 0; i < GRID_STEPS; i++) {
       const d1 = Math.exp(logLo + i * step)
