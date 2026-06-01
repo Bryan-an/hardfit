@@ -2,6 +2,7 @@ import cdf from '@stdlib/stats-base-dists-cauchy-cdf'
 import logpdf from '@stdlib/stats-base-dists-cauchy-logpdf'
 import quantile from '@stdlib/stats-base-dists-cauchy-quantile'
 import { MAX_NEWTON_ITERATIONS, NEWTON_REL_TOL } from '../constants'
+import { sortedQuantile } from '../math'
 import { type Distribution, DistributionName, type FittedParams } from '../types'
 
 /** Fewest observations a 2-parameter cauchy MLE can be estimated from. */
@@ -35,19 +36,6 @@ const HALF = 0.5
  * signature, so `p as CauchyParams` would not compile without an `as unknown` step.
  */
 type CauchyParams = { x0: number; gamma: number }
-
-/** Linearly-interpolated sample quantile of an ASCENDING-sorted array (numpy 'linear' / R type-7):
- *  h = (n−1)p; q = sorted[⌊h⌋] + (h−⌊h⌋)·(sorted[⌈h⌉] − sorted[⌊h⌋]). Index reads are guarded for
- *  `noUncheckedIndexedAccess`; a malformed (empty) array yields NaN rather than throwing. */
-function sortedQuantile(sorted: readonly number[], prob: number): number {
-  const h = (sorted.length - 1) * prob
-  const lo = Math.floor(h)
-  const hi = Math.ceil(h)
-  const vLo = sorted[lo]
-  const vHi = sorted[hi]
-  if (vLo === undefined || vHi === undefined) return Number.NaN
-  return vLo + (h - lo) * (vHi - vLo)
-}
 
 /** Total Cauchy log-likelihood at (x0, gamma): the score-maximization target and the basis for
  *  selecting the best multi-start result. Uses the same @stdlib logpdf the public API exposes. */
