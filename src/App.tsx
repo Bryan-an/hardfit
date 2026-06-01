@@ -1,14 +1,20 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import type { FitAllResult } from './engine/index'
 import { DISTRIBUTIONS, MIN_FIT_SAMPLE_SIZE } from './engine/index'
 import { runFitAll } from './engineClient'
 import { buildHistogramPdf } from './ui/buildHistogramPdf'
 import { CHART_LAYOUT } from './ui/chart-constants'
 import { DataInput } from './ui/DataInput'
-import { PlotlyChart } from './ui/PlotlyChart'
 import { ResultsTable } from './ui/ResultsTable'
 
+// Lazy-load the chart so Plotly (~1.4 MB) is split into an on-demand chunk fetched only after a
+// fit completes, keeping the initial JS bundle small. `PlotlyChart` is a named export, so map it
+// to `default` for `React.lazy` (which expects `{ default: ComponentType }`).
+const PlotlyChart = lazy(() => import('./ui/PlotlyChart').then((m) => ({ default: m.PlotlyChart })))
+
 const TOO_FEW_VALUES_MESSAGE = `Please provide at least ${MIN_FIT_SAMPLE_SIZE} numeric values.`
+/** Shown while the on-demand Plotly chart chunk is being fetched/parsed. */
+const CHART_LOADING_MESSAGE = 'Rendering chart…'
 
 export default function App() {
   const [data, setData] = useState<number[]>([])
@@ -65,7 +71,11 @@ export default function App() {
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold">Ranked fits (by AICc)</h2>
           <ResultsTable ranked={result.ranked} />
-          {traces && <PlotlyChart data={traces} layout={CHART_LAYOUT} />}
+          {traces && (
+            <Suspense fallback={<p>{CHART_LOADING_MESSAGE}</p>}>
+              <PlotlyChart data={traces} layout={CHART_LAYOUT} />
+            </Suspense>
+          )}
           {result.failures.length > 0 && (
             <p className="text-sm text-slate-500">
               Not applicable: {result.failures.map((f) => f.label).join(', ')} (data outside
