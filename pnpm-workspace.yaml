@@ -1,11 +1,15 @@
-# pnpm reads project settings from this file in pnpm 10. No `packages:` key needed for a single-package repo.
+# pnpm reads project settings from this file (pnpm 11). No `packages:` key needed for a single-package repo.
+# minimumReleaseAge/strictDepBuilds are now pnpm 11 defaults; kept explicit as documented intent.
 minimumReleaseAge: 1440
 minimumReleaseAgeExclude: []
 strictDepBuilds: true
+# Exact version pins (moved here from .npmrc, which is auth/registry-only in pnpm 11).
+saveExact: true
 # Native-binary builders allowlisted least-privilege (dev-only toolchain):
 # esbuild = bundler used by Vite 8 and wrangler; workerd = the Workers
 # runtime (wrangler); sharp (via miniflare) = libvips image bindings.
-onlyBuiltDependencies:
-  - esbuild
-  - sharp
-  - workerd
+# allowBuilds replaces onlyBuiltDependencies (removed in pnpm 11); default is deny-all.
+allowBuilds:
+  esbuild: true
+  sharp: true
+  workerd: true
