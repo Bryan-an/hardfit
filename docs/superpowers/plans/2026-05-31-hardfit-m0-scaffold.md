@@ -622,21 +622,18 @@ git commit -m "chore(legal): add production license-compliance gate"
 ```
 > Note: `style-src 'unsafe-inline'` is required because Tailwind/React inject some inline styles; everything else is locked to `'self'`. `worker-src 'self' blob:` allows the Vite-emitted Web Worker (added in M1). Revisit and tighten in M6.
 
-- [ ] **Step 2: Create the explicit SPA fallback**
+- [ ] **Step 2: SPA fallback — handled by Workers Static Assets, NOT `_redirects`**
 
-`public/_redirects`:
-```
-/* /index.html 200
-```
+**Do NOT create `public/_redirects` with `/* /index.html 200`.** Cloudflare deploys this repo as **Workers Static Assets** (Vite framework detection), which **rejects** that rule as an infinite loop (`code 100324`) and fails the deploy. SPA fallback is instead handled by **`not_found_handling: "single-page-application"`** in the Worker config — Cloudflare auto-generates this from the Vite preset (optionally commit an explicit `wrangler.jsonc` for IaC). *(Discovered on the first real deploy — the local `wrangler pages dev` warning became a hard error on Workers. See §9.)*
 
-- [ ] **Step 3: Verify they ship into the build**
+- [ ] **Step 3: Verify `_headers` ships into the build**
 
 Run:
 ```bash
 pnpm build
-ls dist/_headers dist/_redirects
+ls dist/_headers
 ```
-Expected: both files are present in `dist/` (Vite copies `public/` verbatim).
+Expected: `dist/_headers` is present (Vite copies `public/` verbatim). `_headers` (CSP + security headers) IS supported by Workers Static Assets; only `_redirects` was the problem.
 
 - [ ] **Step 4: Commit**
 
