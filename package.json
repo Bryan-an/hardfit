@@ -30,6 +30,7 @@
     "@stdlib/stats-base-dists-normal-logpdf": "0.3.1",
     "@stdlib/stats-base-dists-weibull-cdf": "0.3.1",
     "@stdlib/stats-base-dists-weibull-logpdf": "0.3.1",
+    "comlink": "4.4.2",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
