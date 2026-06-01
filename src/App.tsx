@@ -1,7 +1,17 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
-import type { FitAllResult } from './engine/index'
-import { DISTRIBUTIONS, MIN_FIT_SAMPLE_SIZE } from './engine/index'
-import { runFitAll } from './engineClient'
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import {
+  BOOTSTRAP_TOP_K,
+  DEFAULT_BOOTSTRAP_B,
+  DEFAULT_CI_ALPHA,
+  MIN_FIT_SAMPLE_SIZE,
+} from './engine/constants'
+// Import DISTRIBUTIONS from the leaf module, NOT the `./engine/index` barrel: the barrel statically
+// re-exports `bootstrapTopFits`, which pulls `sampling.ts` → `@stdlib/random-base-*` (the MT19937
+// PRNG) into any chunk that references it. The sampler only ever runs in the worker, so reaching it
+// transitively from App would drag the generator into the main bundle for nothing.
+import { DISTRIBUTIONS } from './engine/distributions/index'
+import type { BootstrapResult, FitAllResult } from './engine/index'
+import { cancelBootstrap, runBootstrap, runFitAll } from './engineClient'
 import { buildHistogramPdf } from './ui/buildHistogramPdf'
 import { CHART_LAYOUT } from './ui/chart-constants'
 import { DataInput } from './ui/DataInput'
@@ -15,16 +25,31 @@ const PlotlyChart = lazy(() => import('./ui/PlotlyChart').then((m) => ({ default
 const TOO_FEW_VALUES_MESSAGE = `Please provide at least ${MIN_FIT_SAMPLE_SIZE} numeric values.`
 /** Shown while the on-demand Plotly chart chunk is being fetched/parsed. */
 const CHART_LOADING_MESSAGE = 'Rendering chart…'
+/** Fixed master seed for the parametric bootstrap so confidence intervals are reproducible
+ *  across runs of the same data (each top-k fit derives a distinct stream seed from this). */
+const DEFAULT_BOOTSTRAP_SEED = 0x48_46_69_74 // "HFit"
+/** Name of the engine's cooperative-cancellation rejection (a plain `Error` across Comlink,
+ *  so it is matched by `name` rather than `instanceof`). */
+const BOOTSTRAP_CANCELLED_NAME = 'BootstrapCancelledError'
+/** Progress fraction (0–1) formatted as a whole-number percent for the indicator. */
+const formatPercent = (fraction: number): string => `${Math.round(fraction * 100)}%`
 
 export default function App() {
   const [data, setData] = useState<number[]>([])
   const [result, setResult] = useState<FitAllResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [bootstrap, setBootstrap] = useState<BootstrapResult | null>(null)
+  // Progress fraction (0–1) while the bootstrap runs; null when idle/settled.
+  const [bootstrapProgress, setBootstrapProgress] = useState<number | null>(null)
 
   async function onData(d: number[]) {
     setError(null)
     setResult(null)
+    // Drop any prior CIs/progress so stale intervals never linger over fresh data; the
+    // in-flight bootstrap (if any) is cancelled + superseded by the effect's cleanup below.
+    setBootstrap(null)
+    setBootstrapProgress(null)
     if (d.length < MIN_FIT_SAMPLE_SIZE) {
       setError(TOO_FEW_VALUES_MESSAGE)
       setData([])
@@ -40,6 +65,48 @@ export default function App() {
       setBusy(false)
     }
   }
+
+  // Auto-run the top-k parametric bootstrap in the background once a fit resolves. The
+  // `active` closure flag — flipped false by the cleanup on a new fit OR on unmount — gates
+  // every setState so a superseded/late run can never overwrite current state, and also
+  // cooperatively cancels the worker. Keyed on [result, data]: `onData` nulls `result`
+  // before awaiting the fit, so this effect only launches on the real-result render.
+  useEffect(() => {
+    if (result === null || result.ranked.length === 0 || data.length === 0) return
+    let active = true
+    setBootstrapProgress(0)
+    runBootstrap(
+      data,
+      result.ranked,
+      {
+        topK: BOOTSTRAP_TOP_K,
+        B: DEFAULT_BOOTSTRAP_B,
+        alpha: DEFAULT_CI_ALPHA,
+        seed: DEFAULT_BOOTSTRAP_SEED,
+      },
+      (fraction) => {
+        if (active) setBootstrapProgress(fraction)
+      },
+    )
+      .then((r) => {
+        if (!active) return
+        setBootstrap(r)
+        setBootstrapProgress(null)
+      })
+      .catch((e: unknown) => {
+        if (!active) return
+        setBootstrapProgress(null)
+        // A user cancel resolves quietly (no error alert); anything else is logged but kept
+        // off the fitAll error path so the primary fit/ranking stays visible.
+        if (!(e instanceof Error && e.name === BOOTSTRAP_CANCELLED_NAME)) {
+          console.error('Bootstrap failed:', e)
+        }
+      })
+    return () => {
+      active = false
+      void cancelBootstrap()
+    }
+  }, [result, data])
 
   const traces = useMemo(() => {
     if (!result || result.ranked.length === 0 || data.length === 0) return null
@@ -70,7 +137,21 @@ export default function App() {
       {result && result.ranked.length > 0 && (
         <section className="flex flex-col gap-4">
           <h2 className="text-xl font-semibold">Ranked fits (by AICc)</h2>
-          <ResultsTable ranked={result.ranked} />
+          {bootstrapProgress !== null && (
+            <div className="flex items-center gap-3 text-sm text-slate-600">
+              <p role="status" aria-live="polite">
+                Computing confidence intervals… {formatPercent(bootstrapProgress)}
+              </p>
+              <button
+                type="button"
+                onClick={() => void cancelBootstrap()}
+                className="rounded border border-slate-300 px-2 py-0.5 text-slate-700 hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+          <ResultsTable ranked={result.ranked} {...(bootstrap ? { bootstrap } : {})} />
           {traces && (
             <Suspense fallback={<p>{CHART_LOADING_MESSAGE}</p>}>
               <PlotlyChart data={traces} layout={CHART_LAYOUT} />

@@ -46,5 +46,13 @@ test('fits the sample dataset end-to-end and renders ranked table + chart', asyn
   // Plotly chart rendered
   await expect(page.locator('.plotly').first()).toBeVisible()
 
-  expect(errors).toEqual([]) // no CSP violations / runtime errors (worker + Plotly under script-src 'self')
+  // Background bootstrap completes: the "Parameters (CI)" column only renders once
+  // runBootstrap resolves (top-3, B=999 takes a few seconds — hence the generous timeout),
+  // and a per-parameter `[lo, hi]` confidence-interval bracket appears in the same render.
+  await expect(page.getByRole('columnheader', { name: /Parameters/ })).toBeVisible({
+    timeout: 30_000,
+  })
+  await expect(page.getByText(/\[\s*-?[\d.]+\s*,\s*-?[\d.]+\s*\]/).first()).toBeVisible()
+
+  expect(errors).toEqual([]) // no CSP violations / runtime errors (worker + Plotly + bootstrap under script-src 'self')
 })

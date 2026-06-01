@@ -1,4 +1,7 @@
-export { MIN_FIT_SAMPLE_SIZE } from './constants'
+export type { BootstrapFitResult, ParamCI } from './bootstrap'
+export type { BootstrapOptions, BootstrapResult } from './bootstrapTopFits'
+export { bootstrapTopFits } from './bootstrapTopFits'
+export { BOOTSTRAP_TOP_K, MIN_FIT_SAMPLE_SIZE } from './constants'
 export { DISTRIBUTIONS } from './distributions/index'
 export type { FitAllOptions } from './fitAll'
 export { fitAll } from './fitAll'
