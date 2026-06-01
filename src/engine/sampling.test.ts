@@ -172,6 +172,8 @@ describe('makeSampler: Batch C discrete sampler convention guards (empirical mom
 describe('makeSampler: Batch D sampler↔quantile convention guards', () => {
   it('student-t(loc, scale, df) — location-scaled standard t, median/IQR (catches loc/scale swap)', () =>
     expectSamplerMatchesQuantile(DistributionName.StudentT, { loc: 3, scale: 2, df: 5 }))
+  it('fisher-f(d1, d2) — asymmetric positive support, median/IQR (catches a d1/d2 swap)', () =>
+    expectSamplerMatchesQuantile(DistributionName.FisherF, { d1: 8, d2: 12 }))
 })
 
 describe('makeSampler: reproducibility + guards', () => {

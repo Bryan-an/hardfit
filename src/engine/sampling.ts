@@ -6,6 +6,7 @@ import chisquareSampler from '@stdlib/random-base-chisquare'
 import cosineSampler from '@stdlib/random-base-cosine'
 import discreteUniformSampler from '@stdlib/random-base-discrete-uniform'
 import exponentialSampler from '@stdlib/random-base-exponential'
+import fSampler from '@stdlib/random-base-f'
 import frechetSampler from '@stdlib/random-base-frechet'
 import gammaSampler from '@stdlib/random-base-gamma'
 import geometricSampler from '@stdlib/random-base-geometric'
@@ -62,6 +63,7 @@ type NegativeBinomialParams = { r: number; p: number }
 type DiscreteUniformParams = { a: number; b: number }
 // M2.3 Batch D — multi-parameter MLE families; same convention as each module + density slots.
 type StudentTParams = { loc: number; scale: number; df: number } // standard t wrapped by loc+scale
+type FisherFParams = { d1: number; d2: number } // d1 = numerator df, d2 = denominator df
 
 /** Fréchet's location is fixed at 0 in HardFit (a 2-parameter Fréchet); the sampler's 3rd
  *  positional arg is that location `m`. Named to avoid a bare 0 literal in the factory call. */
@@ -184,6 +186,11 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
       const { loc, scale, df } = p as StudentTParams
       const draw = tSampler.factory(df, { seed }) // STANDARD t (df only); wrap with loc + scale·z
       return () => loc + scale * draw()
+    }
+    case DistributionName.FisherF: {
+      const { d1, d2 } = p as FisherFParams
+      const draw = fSampler.factory(d1, d2, { seed }) // (d1 = numerator df, d2 = denominator df)
+      return () => draw()
     }
     default:
       throw new Error(`makeSampler: no sampler for '${name}'`)

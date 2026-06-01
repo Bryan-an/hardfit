@@ -137,6 +137,21 @@ STUDENT_T4_25 = [round(float(v), 4) for v in stats.t(4, loc=2, scale=1.5).rvs(si
 # 399-edge equiprobable chi-square at scale (verified: @stdlib t-quantile ↔ scipy.ppf to ~1e-15).
 STUDENT_T8_2000 = [round(float(v), 4) for v in stats.t(8, loc=0, scale=1.0).rvs(size=2000, random_state=_T_RNG)]
 
+# --- M2.3 Batch D: Fisher–Snedecor F positive-support samples ---------------
+#
+# F is positive-support (x > 0) and heavy-tailed, so it gets its OWN real F(d1, d2) draws (the
+# generic positive DATASETS are the wrong shape for gating a moderate-df F fit). Generated ONCE from
+# a SEEDED PCG64 stream and rounded to 4 decimals → byte-stable JSON. Per the plan's fixture
+# discipline: moderate df (5,12) / (10,20) so the optimizer's basin is well-defined, and the
+# project's moderate-n convention (n=25, n=2000) — NEVER adversarial tiny-n.
+_F_RNG = np.random.default_rng(20260601)
+# n=25, F(d1=5, d2=12): a small moderate-df sample. scipy.f.fit under-converges here (the parity
+# skip-set covers the d1/d2 diagnostic), so the LL cross-check is the gate.
+FISHER_F5_12_25 = [round(float(v), 4) for v in stats.f(5, 12).rvs(size=25, random_state=_F_RNG)]
+# n=2000, F(d1=10, d2=20): a large moderate-df sample; exercises the 399-edge equiprobable chi-square
+# at scale (verified: @stdlib f-quantile ↔ scipy.ppf to ~1e-15).
+FISHER_F10_20_2000 = [round(float(v), 4) for v in stats.f(10, 20).rvs(size=2000, random_state=_F_RNG)]
+
 # --- M2.3 Batch C: integer COUNT datasets (the continuous datasets are out-of-support for discrete
 # fits — non-integer values make logPMF -> -inf). Each discrete family gets count data on its own
 # support; values are stored as ints so the engine and the discrete chi-square round-trip them.
@@ -170,6 +185,9 @@ def datasets_for(dist_name: str) -> dict[str, list[float]]:
     if dist_name == "student-t":
         # Real-support t(df) draws (Batch D); NOT the positive/signed sets.
         return {"student_t4_25": STUDENT_T4_25, "student_t8_2000": STUDENT_T8_2000}
+    if dist_name == "fisher-f":
+        # Real F(d1, d2) draws (Batch D); positive-support, moderate df.
+        return {"fisher_f5_12_25": FISHER_F5_12_25, "fisher_f10_20_2000": FISHER_F10_20_2000}
     if dist_name in REAL_SUPPORT_FAMILIES:
         return {**DATASETS, "signed_26": SIGNED_26}
     return DATASETS
@@ -979,6 +997,30 @@ def build_student_t(data: list[float]) -> dict:
     }
 
 
+def build_fisher_f(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # scipy.stats.f is 4-param f(dfn, dfd, loc, scale); PIN floc=0, fscale=1 so it is the standard
+    # two-parameter F. fit -> (dfn, dfd, 0, 1); map dfn -> d1, dfd -> d2 (VERIFIED).
+    d1, d2, _loc, _scale = stats.f.fit(arr, floc=0, fscale=1)
+    rv = stats.f(d1, d2, loc=0, scale=1)
+    fixed = {"d1": float(d1), "d2": float(d2)}
+    # Mode A: iterative 2-D fit -> gate on log-likelihood (HardFit must reach >= scipy's). scipy's
+    # f.fit under-converges, so HardFit may reach a BETTER optimum and the params legitimately differ;
+    # the parity skip-set silences the d1/d2 diagnostic while the LL cross-check stays the contract.
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"d1": float(d1), "d2": float(d2)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
@@ -1009,6 +1051,7 @@ BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "discrete-uniform": build_discrete_uniform,
     # M2.3 Batch D (multi-parameter MLE)
     "student-t": build_student_t,
+    "fisher-f": build_fisher_f,
 }
 
 

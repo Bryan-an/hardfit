@@ -31,6 +31,7 @@ describe('DISTRIBUTIONS registry', () => {
       DistributionName.NegativeBinomial,
       DistributionName.DiscreteUniform,
       DistributionName.StudentT,
+      DistributionName.FisherF,
     ])
     expect(new Set(names).size).toBe(names.length)
   })

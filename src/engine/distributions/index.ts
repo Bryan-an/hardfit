@@ -7,6 +7,7 @@ import { chisquare } from './chisquare'
 import { cosine } from './cosine'
 import { discreteUniform } from './discrete-uniform'
 import { exponential } from './exponential'
+import { fisherF } from './fisher-f'
 import { frechet } from './frechet'
 import { gamma } from './gamma'
 import { geometric } from './geometric'
@@ -55,4 +56,5 @@ export const DISTRIBUTIONS: readonly Distribution[] = [
   discreteUniform,
   // M2.3 Batch D — multi-parameter MLE via the vendored Nelder–Mead optimizer.
   studentT,
+  fisherF,
 ]

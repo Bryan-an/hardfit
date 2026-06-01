@@ -30,6 +30,7 @@ export const DistributionName = {
   DiscreteUniform: 'discrete-uniform',
   // M2.3 Batch D — multi-parameter MLE via the vendored Nelder–Mead optimizer.
   StudentT: 'student-t',
+  FisherF: 'fisher-f',
 } as const
 export type DistributionName = (typeof DistributionName)[keyof typeof DistributionName]
 
