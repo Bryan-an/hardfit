@@ -86,81 +86,88 @@ export function ResultsTable({
 }) {
   const hasBootstrap = bootstrap !== undefined && Object.keys(bootstrap).length > 0
   return (
-    <table className="w-full text-sm border-collapse">
-      <caption className="sr-only">Distributions ranked by AICc (best first)</caption>
-      <thead>
-        <tr className="text-left border-b border-slate-300">
-          <th scope="col" className="py-1 pr-3">
-            #
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            Distribution
-          </th>
-          {hasBootstrap && (
+    // The 11 diagnostic columns (incl. the no-wrap "Parameters (CI)" cells) have an intrinsic
+    // min-width wider than the page's max-w-3xl container on small viewports. Wrapping the table
+    // in a horizontal-scroll container keeps it inside the layout: a scroll container resolves its
+    // automatic min-width to 0, so it never forces the page wider — the table scrolls internally
+    // instead of spilling past the container.
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm border-collapse">
+        <caption className="sr-only">Distributions ranked by AICc (best first)</caption>
+        <thead>
+          <tr className="text-left border-b border-slate-300">
             <th scope="col" className="py-1 pr-3">
-              Parameters (CI)
+              #
             </th>
-          )}
-          <th scope="col" className="py-1 pr-3">
-            AICc
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            ΔAICc
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            Weight
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            KS (D)
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            log-lik
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            AD
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            CvM
-          </th>
-          <th scope="col" className="py-1 pr-3">
-            χ²
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {ranked.map((r) => {
-          const bs = bootstrap?.[r.name]
-          // With bootstrap p-values, KS gains a secondary it lacks in the M2.1 display and
-          // AD/CvM swap their diagnostic/closed-form marker for the rigorous bootstrap p.
-          const ksResult: GofResult = bs
-            ? bootstrapGof(r.ks, bs.gofPValues.ks)
-            : { statistic: r.ks, pValue: null, method: 'diagnostic' }
-          const adResult = bs ? bootstrapGof(r.ad.statistic, bs.gofPValues.ad) : r.ad
-          const cvmResult = bs ? bootstrapGof(r.cvm.statistic, bs.gofPValues.cvm) : r.cvm
-          return (
-            <tr key={r.name} className="border-b border-slate-100">
-              <td className="py-1 pr-3">{r.rank}</td>
-              <th scope="row" className="py-1 pr-3 font-medium text-left">
-                {r.label}
+            <th scope="col" className="py-1 pr-3">
+              Distribution
+            </th>
+            {hasBootstrap && (
+              <th scope="col" className="py-1 pr-3">
+                Parameters (CI)
               </th>
-              {hasBootstrap &&
-                (bs ? (
-                  <ParamsCell name={r.name} paramCIs={bs.paramCIs} />
-                ) : (
-                  <td className="py-1 pr-3 text-slate-400">{EMPTY_VALUE}</td>
-                ))}
-              <td className="py-1 pr-3">{fmt(r.aicc)}</td>
-              <td className="py-1 pr-3">{fmt(r.deltaAICc)}</td>
-              <td className="py-1 pr-3">{fmt(r.weight)}</td>
-              {bs ? <GofCell result={ksResult} /> : <td className="py-1 pr-3">{fmt(r.ks)}</td>}
-              <td className="py-1 pr-3">{fmt(r.logLik)}</td>
-              <GofCell result={adResult} />
-              <GofCell result={cvmResult} />
-              <GofCell result={r.chiSquared} />
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
+            )}
+            <th scope="col" className="py-1 pr-3">
+              AICc
+            </th>
+            <th scope="col" className="py-1 pr-3">
+              ΔAICc
+            </th>
+            <th scope="col" className="py-1 pr-3">
+              Weight
+            </th>
+            <th scope="col" className="py-1 pr-3">
+              KS (D)
+            </th>
+            <th scope="col" className="py-1 pr-3">
+              log-lik
+            </th>
+            <th scope="col" className="py-1 pr-3">
+              AD
+            </th>
+            <th scope="col" className="py-1 pr-3">
+              CvM
+            </th>
+            <th scope="col" className="py-1 pr-3">
+              χ²
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {ranked.map((r) => {
+            const bs = bootstrap?.[r.name]
+            // With bootstrap p-values, KS gains a secondary it lacks in the M2.1 display and
+            // AD/CvM swap their diagnostic/closed-form marker for the rigorous bootstrap p.
+            const ksResult: GofResult = bs
+              ? bootstrapGof(r.ks, bs.gofPValues.ks)
+              : { statistic: r.ks, pValue: null, method: 'diagnostic' }
+            const adResult = bs ? bootstrapGof(r.ad.statistic, bs.gofPValues.ad) : r.ad
+            const cvmResult = bs ? bootstrapGof(r.cvm.statistic, bs.gofPValues.cvm) : r.cvm
+            return (
+              <tr key={r.name} className="border-b border-slate-100">
+                <td className="py-1 pr-3">{r.rank}</td>
+                <th scope="row" className="py-1 pr-3 font-medium text-left">
+                  {r.label}
+                </th>
+                {hasBootstrap &&
+                  (bs ? (
+                    <ParamsCell name={r.name} paramCIs={bs.paramCIs} />
+                  ) : (
+                    <td className="py-1 pr-3 text-slate-400">{EMPTY_VALUE}</td>
+                  ))}
+                <td className="py-1 pr-3">{fmt(r.aicc)}</td>
+                <td className="py-1 pr-3">{fmt(r.deltaAICc)}</td>
+                <td className="py-1 pr-3">{fmt(r.weight)}</td>
+                {bs ? <GofCell result={ksResult} /> : <td className="py-1 pr-3">{fmt(r.ks)}</td>}
+                <td className="py-1 pr-3">{fmt(r.logLik)}</td>
+                <GofCell result={adResult} />
+                <GofCell result={cvmResult} />
+                <GofCell result={r.chiSquared} />
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
