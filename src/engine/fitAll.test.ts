@@ -8,12 +8,12 @@ const sample = [
 ]
 
 describe('fitAll', () => {
-  it('fits 19 of 24 distributions on continuous positive data, ranks by AICc, weights sum to 1', () => {
+  it('fits 20 of 25 distributions on continuous positive data, ranks by AICc, weights sum to 1', () => {
     const res = fitAll(sample)
     expect(res.n).toBe(sample.length)
     // This sample is continuous (non-integer) and > 1. Beta needs 0 < x < 1, and the 4 discrete
-    // families reject the non-integer values — so 5 fail and the other 19 rank.
-    expect(res.ranked.length).toBe(19)
+    // families reject the non-integer values — so 5 fail and the other 20 rank (incl. Student-t).
+    expect(res.ranked.length).toBe(20)
     expect(res.failures.map((f) => f.name).sort()).toEqual(
       [
         DistributionName.Beta,

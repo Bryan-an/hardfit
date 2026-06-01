@@ -28,6 +28,8 @@ export const DistributionName = {
   Geometric: 'geometric',
   NegativeBinomial: 'negative-binomial',
   DiscreteUniform: 'discrete-uniform',
+  // M2.3 Batch D — multi-parameter MLE via the vendored Nelder–Mead optimizer.
+  StudentT: 'student-t',
 } as const
 export type DistributionName = (typeof DistributionName)[keyof typeof DistributionName]
 

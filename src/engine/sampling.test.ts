@@ -169,6 +169,11 @@ describe('makeSampler: Batch C discrete sampler convention guards (empirical mom
   })
 })
 
+describe('makeSampler: Batch D sampler↔quantile convention guards', () => {
+  it('student-t(loc, scale, df) — location-scaled standard t, median/IQR (catches loc/scale swap)', () =>
+    expectSamplerMatchesQuantile(DistributionName.StudentT, { loc: 3, scale: 2, df: 5 }))
+})
+
 describe('makeSampler: reproducibility + guards', () => {
   it('same seed → identical first draws', () => {
     const params = { shape: 3, rate: 1.5, scale: 1 / 1.5 }

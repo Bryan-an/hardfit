@@ -20,6 +20,7 @@ import normalSampler from '@stdlib/random-base-normal'
 import paretoSampler from '@stdlib/random-base-pareto-type1'
 import poissonSampler from '@stdlib/random-base-poisson'
 import rayleighSampler from '@stdlib/random-base-rayleigh'
+import tSampler from '@stdlib/random-base-t'
 import uniformSampler from '@stdlib/random-base-uniform'
 import weibullSampler from '@stdlib/random-base-weibull'
 import { DistributionName, type FittedParams } from './types'
@@ -59,6 +60,8 @@ type PoissonParams = { lambda: number }
 type GeometricParams = { p: number }
 type NegativeBinomialParams = { r: number; p: number }
 type DiscreteUniformParams = { a: number; b: number }
+// M2.3 Batch D — multi-parameter MLE families; same convention as each module + density slots.
+type StudentTParams = { loc: number; scale: number; df: number } // standard t wrapped by loc+scale
 
 /** Fréchet's location is fixed at 0 in HardFit (a 2-parameter Fréchet); the sampler's 3rd
  *  positional arg is that location `m`. Named to avoid a bare 0 literal in the factory call. */
@@ -176,6 +179,11 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
     case DistributionName.DiscreteUniform: {
       const { a, b } = p as DiscreteUniformParams
       return discreteUniformSampler.factory(a, b, { seed }) // inclusive integers {a,…,b}
+    }
+    case DistributionName.StudentT: {
+      const { loc, scale, df } = p as StudentTParams
+      const draw = tSampler.factory(df, { seed }) // STANDARD t (df only); wrap with loc + scale·z
+      return () => loc + scale * draw()
     }
     default:
       throw new Error(`makeSampler: no sampler for '${name}'`)

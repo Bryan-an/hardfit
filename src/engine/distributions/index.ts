@@ -21,6 +21,7 @@ import { normal } from './normal'
 import { pareto } from './pareto'
 import { poisson } from './poisson'
 import { rayleigh } from './rayleigh'
+import { studentT } from './student-t'
 import { uniform } from './uniform'
 import { weibull } from './weibull'
 
@@ -52,4 +53,6 @@ export const DISTRIBUTIONS: readonly Distribution[] = [
   geometric,
   negativeBinomial,
   discreteUniform,
+  // M2.3 Batch D — multi-parameter MLE via the vendored Nelder–Mead optimizer.
+  studentT,
 ]

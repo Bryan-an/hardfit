@@ -121,6 +121,22 @@ UNIT_TINY_3 = [0.3, 0.5, 0.7]
 # Bounded-(0,1) families (M2.3 Batch B) that use the unit-interval datasets instead of the positives.
 UNIT_INTERVAL_FAMILIES = {"beta"}
 
+# --- M2.3 Batch D: Student-t real-support samples ---------------------------
+#
+# Student-t is real-support (the positive/unit/signed sets above are all the wrong shape for
+# gating a heavy-tailed real-support fit), so it gets its OWN datasets: real t(df) draws. They
+# are generated ONCE here from a SEEDED PCG64 stream (np.random.default_rng — version-stable, NOT
+# live system RNG) and rounded to 4 decimals, so the committed JSON is byte-stable across reruns.
+# Per the plan's fixture discipline: use small-ish df (4, 8) so df is IDENTIFIABLE, and the
+# project's moderate-n convention (n=25, n=2000) — NEVER adversarial tiny-n (where scipy's t.fit
+# diverges to degenerate df→0/scale→0 maxima and the gate would mislabel HardFit's correct fit).
+_T_RNG = np.random.default_rng(20260601)
+# n=25, t(df=4, loc=2, scale=1.5): a small heavy-tailed sample where df is well-identified.
+STUDENT_T4_25 = [round(float(v), 4) for v in stats.t(4, loc=2, scale=1.5).rvs(size=25, random_state=_T_RNG)]
+# n=2000, t(df=8, loc=0, scale=1): a large near-normal-ish sample; df identifiable, exercises the
+# 399-edge equiprobable chi-square at scale (verified: @stdlib t-quantile ↔ scipy.ppf to ~1e-15).
+STUDENT_T8_2000 = [round(float(v), 4) for v in stats.t(8, loc=0, scale=1.0).rvs(size=2000, random_state=_T_RNG)]
+
 # --- M2.3 Batch C: integer COUNT datasets (the continuous datasets are out-of-support for discrete
 # fits — non-integer values make logPMF -> -inf). Each discrete family gets count data on its own
 # support; values are stored as ints so the engine and the discrete chi-square round-trip them.
@@ -151,6 +167,9 @@ def datasets_for(dist_name: str) -> dict[str, list[float]]:
         return DISCRETE_DATASETS[dist_name]
     if dist_name in UNIT_INTERVAL_FAMILIES:
         return {"unit_tiny_3": UNIT_TINY_3, "unit_22": UNIT_22}
+    if dist_name == "student-t":
+        # Real-support t(df) draws (Batch D); NOT the positive/signed sets.
+        return {"student_t4_25": STUDENT_T4_25, "student_t8_2000": STUDENT_T8_2000}
     if dist_name in REAL_SUPPORT_FAMILIES:
         return {**DATASETS, "signed_26": SIGNED_26}
     return DATASETS
@@ -934,6 +953,32 @@ def build_discrete_uniform(data: list[float]) -> dict:
     }
 
 
+# --- M2.3 Batch D builders (multi-parameter MLE via the vendored Nelder–Mead optimizer) ----
+
+
+def build_student_t(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # IDENTITY 1:1 mapping: scipy.stats.t.fit -> (df, loc, scale); HardFit {loc, scale, df} are the
+    # SAME three free params (NO floc/fscale — loc and scale are genuine, free). df FIRST in scipy.
+    df, loc, scale = stats.t.fit(arr)
+    rv = stats.t(df, loc=loc, scale=scale)
+    fixed = {"loc": float(loc), "scale": float(scale), "df": float(df)}
+    # Mode A: iterative 3-D fit -> gate on log-likelihood (HardFit must reach >= scipy's; HardFit
+    # may converge to a marginally BETTER optimum, so param equality is a loose diagnostic only).
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=3),
+        "modeA": {
+            "form": "iterative",
+            "params": {"loc": float(loc), "scale": float(scale), "df": float(df)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 3, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
@@ -962,6 +1007,8 @@ BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "geometric": build_geometric,
     "negative-binomial": build_negative_binomial,
     "discrete-uniform": build_discrete_uniform,
+    # M2.3 Batch D (multi-parameter MLE)
+    "student-t": build_student_t,
 }
 
 
