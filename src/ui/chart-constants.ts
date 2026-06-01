@@ -31,9 +31,9 @@ export const TRACE_TYPE_HISTOGRAM = 'histogram' as const
 export const TRACE_TYPE_SCATTER = 'scatter' as const
 /** Plotly scatter `mode` for a connected line (no markers). */
 export const SCATTER_MODE_LINES = 'lines' as const
-/** Plotly scatter `mode` for discrete PMF stems: a marker at each integer support point + a thin
- *  drop-line to the axis (a continuous line would misrepresent a probability mass function). */
-export const SCATTER_MODE_MARKERS_LINES = 'markers' as const
+/** Plotly scatter `mode` for a discrete PMF overlay: a marker at each integer support point (NOT a
+ *  connected line, which would misrepresent the discrete probability masses between integers). */
+export const SCATTER_MODE_MARKERS = 'markers' as const
 /** Cap on the number of integer PMF stems drawn (guards a huge count range from flooding the chart). */
 export const MAX_PMF_STEMS = 200
 

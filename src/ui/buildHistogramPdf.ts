@@ -10,7 +10,7 @@ import {
   PDF_LINE_COLOR,
   PDF_LINE_WIDTH,
   SCATTER_MODE_LINES,
-  SCATTER_MODE_MARKERS_LINES,
+  SCATTER_MODE_MARKERS,
   TRACE_TYPE_HISTOGRAM,
   TRACE_TYPE_SCATTER,
 } from './chart-constants'
@@ -56,7 +56,7 @@ export function buildHistogramPdf(
       histogram,
       {
         type: TRACE_TYPE_SCATTER,
-        mode: SCATTER_MODE_MARKERS_LINES,
+        mode: SCATTER_MODE_MARKERS,
         x: xStems,
         y: yStems,
         name: `${dist.label} fit`,

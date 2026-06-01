@@ -3,6 +3,7 @@ import { bcaCI, bootstrapFit, jackknife, percentileCI } from './bootstrap'
 import { BCA_JACKKNIFE_MAX_N } from './constants'
 import { exponential } from './distributions/exponential'
 import { normal } from './distributions/normal'
+import { poisson } from './distributions/poisson'
 import { mean } from './math'
 import { makeSampler } from './sampling'
 import type { Distribution, FittedParams } from './types'
@@ -235,5 +236,21 @@ describe('bootstrapFit (fused CIs + GoF p-values)', () => {
     for (const ci of Object.values(result.paramCIs)) {
       expect(ci.method).toBe('percentile')
     }
+  })
+
+  it('discrete fit: param CIs are computed but GoF resampling is skipped (gofPValues null)', async () => {
+    // The Batch C kind-branch: a discrete law's EDF statistics are invalid under ties, so the
+    // bootstrap must NOT resample them (that would yield a spurious ~1/(B+1) p-value); it still
+    // produces parameter confidence intervals from the refitted integer replicates.
+    const counts = [0, 1, 2, 1, 3, 0, 2, 1, 4, 2, 1, 0, 3, 2, 1, 2, 0, 1, 3, 1, 2, 1, 0, 2, 1]
+    const fitted = poisson.fit(counts)
+    const result = await bootstrapFit(poisson, counts, fitted, { B: 200, alpha: ALPHA, seed: 7 })
+    expect(result.gofPValues).toBeNull() // χ² keeps its table p-value; no EDF bootstrap
+    const lambdaCI = result.paramCIs.lambda
+    if (!lambdaCI) throw new Error('expected a lambda CI')
+    // A finite, ordered interval bracketing the point estimate (λ̂ ≈ 1.44).
+    expect(lambdaCI.bca[0]).toBeLessThanOrEqual(lambdaCI.point)
+    expect(lambdaCI.point).toBeLessThanOrEqual(lambdaCI.bca[1])
+    expect(Number.isFinite(lambdaCI.bca[0]) && Number.isFinite(lambdaCI.bca[1])).toBe(true)
   })
 })

@@ -136,6 +136,10 @@ export interface DiscreteChiSquaredCell {
  *   X² = Σ_j (O_j − E_j)² / E_j;  df = k − 1 − nParams;  p = df ≥ 1 ? 1 − χ²cdf(X², df) : NaN.
  * NOTE (Chernoff–Lehmann): like the continuous χ², with parameters estimated from the same data the
  * χ²(k−1−p) reference is anti-conservative for raw-data MLE, so this p-value is APPROXIMATE.
+ * NOTE (base measure): on integer data the engine ranks discrete fits (this PMF-based log-likelihood
+ * / AICc) alongside continuous fits (a density-based log-likelihood / AICc) in one table. These use
+ * different base measures, so the cross-ranking is APPROXIMATE — for unit-spaced counts density×1 ≈
+ * PMF (why tools list them together), but it is not an exact likelihood comparison.
  */
 export function chiSquaredGofDiscrete(
   data: readonly number[],
