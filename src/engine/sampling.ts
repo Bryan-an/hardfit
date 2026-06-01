@@ -73,10 +73,24 @@ const FRECHET_LOCATION = 0
 /** Lévy's location is fixed at 0 in HardFit (a 1-parameter Lévy); the sampler's 1st positional
  *  arg is that location `mu`. Named to avoid a bare 0 literal in the factory call. */
 const LEVY_LOCATION = 0
-/** Inverse-Gaussian (Michael–Schucany–Haas) accept-step probability split point: a draw x is kept
- *  with probability mu/(mu+x), else folded to mu²/x. Named to avoid bare arithmetic in the case. */
-const IG_FOLD_NUMERATOR_DOUBLE = 2
-const IG_FOLD_QUAD = 4
+/** Standard-normal mean/sd for the @stdlib normal factory in the Inverse-Gaussian (MSH) sampler: the
+ *  MSH transform consumes a STANDARD normal draw `nu`. Named to avoid bare 0/1 literals in the factory
+ *  call (same convention as FRECHET_LOCATION / LEVY_LOCATION above). */
+const STD_NORMAL_MEAN = 0
+const STD_NORMAL_SD = 1
+/** U(0,1) support bounds for the @stdlib uniform factory in the Inverse-Gaussian (MSH) sampler: the
+ *  accept step compares a U(0,1) draw against mu/(mu+x). Named to avoid bare 0/1 literals. */
+const UNIFORM_LO = 0
+const UNIFORM_HI = 1
+/** Inverse-Gaussian (Michael–Schucany–Haas) VARIATE-TRANSFORM constants (NOT the accept step, which
+ *  carries no numeric literal). The MSH transform of a standard-normal draw nu (y = nu²) is
+ *    x = μ + (μ²·y)/(2λ) − (μ/(2λ))·√(4·μ·λ·y + μ²·y²).
+ *  IG_TRANSFORM_DENOM_COEFF = the 2 in the two `2λ` denominators of the additive and √-coefficient
+ *  terms. */
+const IG_TRANSFORM_DENOM_COEFF = 2
+/** IG_TRANSFORM_RADICAND_COEFF = the 4 multiplying μ·λ·y inside the radicand of the MSH transform
+ *  above. Named separately from IG_TRANSFORM_DENOM_COEFF so each literal documents its own operation. */
+const IG_TRANSFORM_RADICAND_COEFF = 4
 
 /** Derives a DISTINCT sub-stream seed from the master `seed` by mixing in `BOOTSTRAP_SEED_SALT`
  *  (Knuth's golden-ratio constant) as an unsigned 32-bit value. The MSH sampler draws a normal and a
@@ -213,16 +227,16 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
       // accept step folds it to mu²/x with probability 1 − mu/(mu+x). The two streams MUST be
       // independently seeded — a shared seed correlates the uniform accept with the normal-derived x
       // and biases the sampler (a smoke test would not catch it; the statistical test does).
-      const drawNormal = normalSampler.factory(0, 1, { seed }) // standard normal stream
-      const drawUniform = uniformSampler.factory(0, 1, { seed: saltSeed(seed) }) // distinct U(0,1) stream
+      const drawNormal = normalSampler.factory(STD_NORMAL_MEAN, STD_NORMAL_SD, { seed }) // std normal stream
+      const drawUniform = uniformSampler.factory(UNIFORM_LO, UNIFORM_HI, { seed: saltSeed(seed) }) // distinct U(0,1) stream
       return () => {
         const nu = drawNormal()
         const y = nu * nu
         const x =
           mu +
-          (mu * mu * y) / (IG_FOLD_NUMERATOR_DOUBLE * lambda) -
-          (mu / (IG_FOLD_NUMERATOR_DOUBLE * lambda)) *
-            Math.sqrt(IG_FOLD_QUAD * mu * lambda * y + mu * mu * y * y)
+          (mu * mu * y) / (IG_TRANSFORM_DENOM_COEFF * lambda) -
+          (mu / (IG_TRANSFORM_DENOM_COEFF * lambda)) *
+            Math.sqrt(IG_TRANSFORM_RADICAND_COEFF * mu * lambda * y + mu * mu * y * y)
         return drawUniform() <= mu / (mu + x) ? x : (mu * mu) / x
       }
     }

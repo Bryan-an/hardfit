@@ -10,8 +10,10 @@ const MIN_SAMPLE_SIZE = 2
 const STD_NORMAL_MEAN = 0
 const STD_NORMAL_SD = 1
 /** Density/CDF algebra constants (no-magic-literals rule). HALF = the 1/2 in the log-density prefactor
- *  and in the (x−mu)²/(2·mu²·x) exponent; THREE = the −3·ln x term of the IG log-density; TWO = the
- *  λ→2λ doubling in both the exponent denominator and the CDF's 2λ/μ fold exponent. */
+ *  and in the (x−mu)²/(2·mu²·x) exponent; THREE = the −3·ln x term of the IG log-density. TWO has
+ *  THREE distinct roles, all genuinely the integer 2: (1) the 2π density normalizer in the
+ *  −ln(2π)/2 term of `igLogpdf` (`Math.log(TWO·Math.PI)`); (2) the 2·mu²·x denominator of that same
+ *  log-density's exponent; (3) the 2λ/μ fold exponent in the overflow-safe CDF. */
 const HALF = 0.5
 const THREE = 3
 const TWO = 2
