@@ -25,7 +25,13 @@ const REF_LOGPDF = -0.7050081606432148
 const REF_CDF = 0.7452273455163945
 /** scipy reference quantile (ppf) at (p=0.5; m=2, Omega=3). */
 const REF_QUANTILE_MEDIAN = 1.5866696206283752
-/** Verified MLE on FIT_DATA (== scipy.nakagami.fit(x, floc=0) remapped to ~1e-9). */
+/**
+ * Verified MLE on FIT_DATA. HardFit's gamma-on-x² reduction is the EXACT MLE (Omega = mean(x²) in
+ * closed form; m solves the exact shape equation), so its params agree with scipy.nakagami.fit(x,
+ * floc=0) only to ~1e-4 (m) / ~1e-6 (Omega) because scipy's nakagami.fit UNDER-converges — that
+ * under-convergence is also why HardFit's LL >= scipy's (only the LL matches to ~1e-9; see the
+ * REF_FIT_LL comment below).
+ */
 const REF_FIT_M = 1.873662875224561
 const REF_FIT_OMEGA = 2.2809999999999997
 /** Verified maximized LL at the MLE (== scipy fitted LL to ~1e-9; HardFit reaches >= scipy). */
