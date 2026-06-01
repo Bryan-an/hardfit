@@ -50,6 +50,9 @@ importers:
       comlink:
         specifier: 4.4.2
         version: 4.4.2
+      plotly.js-cartesian-dist-min:
+        specifier: 3.5.1
+        version: 3.5.1
       react:
         specifier: 19.2.6
         version: 19.2.6
@@ -81,6 +84,9 @@ importers:
       '@types/node':
         specifier: 24.12.4
         version: 24.12.4
+      '@types/plotly.js':
+        specifier: 3.0.10
+        version: 3.0.10
       '@types/react':
         specifier: 19.2.15
         version: 19.2.15
@@ -2120,6 +2126,9 @@ packages:
   '@types/node@24.12.4':
     resolution: {integrity: sha512-GUUEShf+PBCGW2KaXwcIt3Yk+e3pkKwWKb9GSyM9WQVE+ep2jzmHdGsHzu4wgcZy5fN9FBdVzjpBQsYlpfpgLA==}
 
+  '@types/plotly.js@3.0.10':
+    resolution: {integrity: sha512-q+MgO4aajC2HrO7FllTYWzrpdfbTjboSMfjkz/aXKjg1v7HNo1zMEFfAW7quKfk6SL+bH74A5ThBEps/7hZxOA==}
+
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
     peerDependencies:
@@ -2787,6 +2796,9 @@ packages:
     resolution: {integrity: sha512-hheHdokM8cdqCb0lcE3s+zT4t4W+vvjpGxsZlDnikarzx8tSzMebh3UiFtgqwFwnTnjYQcsyMF8ei2mCO/tpeA==}
     engines: {node: '>=18'}
     hasBin: true
+
+  plotly.js-cartesian-dist-min@3.5.1:
+    resolution: {integrity: sha512-R5OPttkbpMS5ctol52CqJCHIcErFmfJZpQw6gPpls1vlGdSELhbfKf+FAFzKtW7UjdNu5B6K5yOpDQUv9GcABQ==}
 
   postcss-selector-parser@7.1.1:
     resolution: {integrity: sha512-orRsuYpJVw8LdAwqqLykBj9ecS5/cRHlI5+nvTo8LcCKmzDmqVORXtOIYEEQuL9D4BxtA1lm5isAqzQZCoQ6Eg==}
@@ -5456,6 +5468,8 @@ snapshots:
     dependencies:
       undici-types: 7.16.0
 
+  '@types/plotly.js@3.0.10': {}
+
   '@types/react-dom@19.2.3(@types/react@19.2.15)':
     dependencies:
       '@types/react': 19.2.15
@@ -6132,6 +6146,8 @@ snapshots:
       playwright-core: 1.60.0
     optionalDependencies:
       fsevents: 2.3.2
+
+  plotly.js-cartesian-dist-min@3.5.1: {}
 
   postcss-selector-parser@7.1.1:
     dependencies:

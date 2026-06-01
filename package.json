@@ -31,6 +31,7 @@
     "@stdlib/stats-base-dists-weibull-cdf": "0.3.1",
     "@stdlib/stats-base-dists-weibull-logpdf": "0.3.1",
     "comlink": "4.4.2",
+    "plotly.js-cartesian-dist-min": "3.5.1",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },
@@ -43,6 +44,7 @@
     "@testing-library/react": "16.3.2",
     "@testing-library/user-event": "14.6.1",
     "@types/node": "24.12.4",
+    "@types/plotly.js": "3.0.10",
     "@types/react": "19.2.15",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
