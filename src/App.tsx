@@ -1,7 +1,16 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
-import { DEFAULT_BOOTSTRAP_B, DEFAULT_CI_ALPHA } from './engine/constants'
+import {
+  BOOTSTRAP_TOP_K,
+  DEFAULT_BOOTSTRAP_B,
+  DEFAULT_CI_ALPHA,
+  MIN_FIT_SAMPLE_SIZE,
+} from './engine/constants'
+// Import DISTRIBUTIONS from the leaf module, NOT the `./engine/index` barrel: the barrel statically
+// re-exports `bootstrapTopFits`, which pulls `sampling.ts` → `@stdlib/random-base-*` (the MT19937
+// PRNG) into any chunk that references it. The sampler only ever runs in the worker, so reaching it
+// transitively from App would drag the generator into the main bundle for nothing.
+import { DISTRIBUTIONS } from './engine/distributions/index'
 import type { BootstrapResult, FitAllResult } from './engine/index'
-import { BOOTSTRAP_TOP_K, DISTRIBUTIONS, MIN_FIT_SAMPLE_SIZE } from './engine/index'
 import { cancelBootstrap, runBootstrap, runFitAll } from './engineClient'
 import { buildHistogramPdf } from './ui/buildHistogramPdf'
 import { CHART_LAYOUT } from './ui/chart-constants'
