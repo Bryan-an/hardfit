@@ -63,6 +63,35 @@ describe('fisher-f', () => {
     const SCIPY_LL = -43.99876190436338
     expect(logLik(F5_12_SAMPLE, p)).toBeGreaterThanOrEqual(SCIPY_LL - 1e-6)
   })
+  it('warm-started quick refit returns finite {d1, d2} close to the cold fit', () => {
+    // The parametric bootstrap seeds a replicate refit from the original point estimate, which lets
+    // the optimizer SKIP the GRID_STEPS² cold-seed scan entirely. A warm-started quick refit on the
+    // ORIGINAL data must land at essentially the same optimum as the cold fit (within a few %).
+    const cold = fisherF.fit(F5_12_SAMPLE) as FisherFParams
+    const warm = fisherF.fit(F5_12_SAMPLE, { quick: true, warmStart: cold }) as FisherFParams
+    const WARM_REL_TOL = 0.03
+    expect(Number.isFinite(warm.d1)).toBe(true)
+    expect(Number.isFinite(warm.d2)).toBe(true)
+    expect(warm.d1).toBeGreaterThan(0)
+    expect(warm.d2).toBeGreaterThan(0)
+    expect(Math.abs(warm.d1 - cold.d1)).toBeLessThanOrEqual(WARM_REL_TOL * Math.abs(cold.d1))
+    expect(Math.abs(warm.d2 - cold.d2)).toBeLessThanOrEqual(WARM_REL_TOL * Math.abs(cold.d2))
+  })
+  it('a non-finite/non-positive warmStart falls back to the cold log-grid seed', () => {
+    // A degenerate warmStart (NaN, 0, negative) must NOT poison the fit: the predicate rejects it
+    // and the existing cold GRID_STEPS² seed runs, so the fit still converges to the real optimum.
+    const cold = fisherF.fit(F5_12_SAMPLE) as FisherFParams
+    const bad = fisherF.fit(F5_12_SAMPLE, {
+      quick: true,
+      warmStart: { d1: Number.NaN, d2: 0 },
+    }) as FisherFParams
+    expect(Number.isFinite(bad.d1)).toBe(true)
+    expect(Number.isFinite(bad.d2)).toBe(true)
+    expect(bad.d1).toBeGreaterThan(0)
+    expect(bad.d2).toBeGreaterThan(0)
+    // The cold seed still finds the basin, so the LL is at least as good as the cold fit (minus slack).
+    expect(logLik(F5_12_SAMPLE, bad)).toBeGreaterThanOrEqual(logLik(F5_12_SAMPLE, cold) - 1e-6)
+  })
   it('rejects non-positive data (x ≤ 0)', () =>
     expect(() => fisherF.fit([1, 2, -0.5, 3, 4])).toThrow())
   it('rejects too-small samples (n < 2)', () => expect(() => fisherF.fit([1])).toThrow())

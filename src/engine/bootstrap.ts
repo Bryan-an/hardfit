@@ -265,7 +265,11 @@ export async function bootstrapFit(
       // Quick refit: the B replicates don't need parity-gate precision (MC error across replicates
       // dominates any single replicate's sub-1e-6 imprecision). Cheap closed-form/Newton families
       // ignore `opts`; only the optimizer-fit families read it to relax their NM caps.
-      tb = dist.fit(sample, { quick: true })
+      // WARM START: seed the replicate refit at the original point estimate (`fittedParams`). A
+      // resample's MLE sits beside the original, so the optimizer-fit families (Student-t, Fisher-F)
+      // start near their optimum — skipping Fisher-F's GRID_STEPS² cold-seed scan and letting the NM
+      // converge in a handful of iterations. Closed-form/Newton families ignore it.
+      tb = dist.fit(sample, { quick: true, warmStart: fittedParams })
     } catch {
       continue // degenerate synthetic sample → skip this replicate
     }

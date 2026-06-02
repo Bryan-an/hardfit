@@ -74,6 +74,38 @@ describe('student-t', () => {
     const seed = { loc: median, scale: iqr / 1.349, df: 10 }
     expect(logLik(T4_SAMPLE, p)).toBeGreaterThanOrEqual(logLik(T4_SAMPLE, seed) - 1e-9)
   })
+  it('warm-started quick refit returns finite {loc, scale, df} close to the cold fit', () => {
+    // The parametric bootstrap seeds a replicate refit from the original point estimate, which lets
+    // the Nelder–Mead converge in a handful of iterations from near its optimum (skipping the cold
+    // median/IQR/DF_SEED seed). A warm-started quick refit on the ORIGINAL data must land at
+    // essentially the same optimum as the cold fit (within a few %).
+    const cold = studentT.fit(T4_SAMPLE) as StudentTParams
+    const warm = studentT.fit(T4_SAMPLE, { quick: true, warmStart: cold }) as StudentTParams
+    const WARM_REL_TOL = 0.03
+    expect(Number.isFinite(warm.loc)).toBe(true)
+    expect(warm.scale).toBeGreaterThan(0)
+    expect(warm.df).toBeGreaterThan(0)
+    expect(Math.abs(warm.loc - cold.loc)).toBeLessThanOrEqual(
+      WARM_REL_TOL * Math.max(Math.abs(cold.loc), 1),
+    )
+    expect(Math.abs(warm.scale - cold.scale)).toBeLessThanOrEqual(
+      WARM_REL_TOL * Math.abs(cold.scale),
+    )
+    expect(Math.abs(warm.df - cold.df)).toBeLessThanOrEqual(WARM_REL_TOL * Math.abs(cold.df))
+  })
+  it('a non-finite/non-positive warmStart falls back to the cold robust seed', () => {
+    // A degenerate warmStart (NaN loc, 0 scale, etc.) must NOT poison the fit: the predicate rejects
+    // it and the existing cold median/IQR seed runs, so the fit still converges to the real optimum.
+    const cold = studentT.fit(T4_SAMPLE) as StudentTParams
+    const bad = studentT.fit(T4_SAMPLE, {
+      quick: true,
+      warmStart: { loc: Number.NaN, scale: 0, df: -1 },
+    }) as StudentTParams
+    expect(Number.isFinite(bad.loc)).toBe(true)
+    expect(bad.scale).toBeGreaterThan(0)
+    expect(bad.df).toBeGreaterThan(0)
+    expect(logLik(T4_SAMPLE, bad)).toBeGreaterThanOrEqual(logLik(T4_SAMPLE, cold) - 1e-6)
+  })
   it('rejects degenerate (zero-spread) data', () =>
     expect(() => studentT.fit([7, 7, 7, 7, 7])).toThrow())
   it('rejects a strict majority of identical values (unbounded MLE — mirrors cauchy)', () => {
@@ -81,6 +113,14 @@ describe('student-t', () => {
     // {scale ≈ 4e-154, df ≈ 0.008} with LL ≈ +1390 and WINS the AICc ranking with a degenerate fit.
     // (Regression for a Batch D adversarial-verification finding; cf. cauchy's identical guard.)
     expect(() => studentT.fit([3, 3, 3, 3, 9])).toThrow(/majority/)
+  })
+  it('a warmStart does NOT bypass the majority-tie guard (guard precedence)', () => {
+    // The unbounded-MLE guard MUST run before the warm-start seed is applied — otherwise a bootstrap
+    // replicate that resampled into a degenerate majority-tie sample would silently fit a spurious
+    // tiny-scale optimum. Passing a (valid) warmStart must NOT let that sample through.
+    expect(() =>
+      studentT.fit([3, 3, 3, 3, 9], { quick: true, warmStart: { loc: 3, scale: 1, df: 5 } }),
+    ).toThrow(/majority/)
   })
   it('rejects too-small samples (n < 4)', () => expect(() => studentT.fit([1, 2, 3])).toThrow())
   it('k = 3', () => expect(studentT.k).toBe(3))

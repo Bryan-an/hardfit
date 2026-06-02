@@ -108,26 +108,39 @@ export const fisherF: Distribution = {
     for (const x of data) {
       if (!(x > 0)) throw new Error('fisher-f: data must be strictly positive (x > 0)')
     }
-    // COARSE LOG-GRID SEED: the F likelihood in (d1, d2) is not convex and median/IQR give no useful
-    // df anchor, so evaluate the full LL at GRID_STEPS² log-spaced nodes over [GRID_LO, GRID_HI]² and
-    // keep the max-LL node. Log spacing matches the geometry of df (a multiplicative quantity).
-    const logLo = Math.log(GRID_LO)
-    const logHi = Math.log(GRID_HI)
-    const step = (logHi - logLo) / (GRID_STEPS - 1)
-    // Seed both df at the neutral df=1 fallback; the log-grid below overwrites them at the first
-    // finite-LL node (so the fallback only survives the degenerate all-non-finite-LL case).
+    // WARM START (bootstrap replicate refits only): when the caller passes the original point estimate
+    // with finite, strictly-positive (d1, d2), seed the optimizer there and SKIP the GRID_STEPS²
+    // cold-seed scan entirely — a resample's MLE sits beside the original, so the grid (the cold-start
+    // basin finder) is unneeded and is exactly the per-refit cost this avoids. A degenerate warmStart
+    // (NaN/0/negative df) is rejected by the predicate so the cold log-grid below runs as before.
     let seedD1 = SEED_DF_FALLBACK
     let seedD2 = SEED_DF_FALLBACK
-    let bestLL = Number.NEGATIVE_INFINITY
-    for (let i = 0; i < GRID_STEPS; i++) {
-      const d1 = Math.exp(logLo + i * step)
-      for (let j = 0; j < GRID_STEPS; j++) {
-        const d2 = Math.exp(logLo + j * step)
-        const ll = logLik(data, d1, d2)
-        if (Number.isFinite(ll) && ll > bestLL) {
-          bestLL = ll
-          seedD1 = d1
-          seedD2 = d2
+    const ws = opts?.warmStart as FisherFParams | undefined
+    const warmStarted =
+      ws !== undefined && Number.isFinite(ws.d1) && ws.d1 > 0 && Number.isFinite(ws.d2) && ws.d2 > 0
+    if (warmStarted) {
+      seedD1 = ws.d1
+      seedD2 = ws.d2
+    } else {
+      // COARSE LOG-GRID SEED: the F likelihood in (d1, d2) is not convex and median/IQR give no useful
+      // df anchor, so evaluate the full LL at GRID_STEPS² log-spaced nodes over [GRID_LO, GRID_HI]² and
+      // keep the max-LL node. Log spacing matches the geometry of df (a multiplicative quantity).
+      const logLo = Math.log(GRID_LO)
+      const logHi = Math.log(GRID_HI)
+      const step = (logHi - logLo) / (GRID_STEPS - 1)
+      // The log-grid below overwrites the neutral df=1 fallback at the first finite-LL node (so the
+      // fallback only survives the degenerate all-non-finite-LL case).
+      let bestLL = Number.NEGATIVE_INFINITY
+      for (let i = 0; i < GRID_STEPS; i++) {
+        const d1 = Math.exp(logLo + i * step)
+        for (let j = 0; j < GRID_STEPS; j++) {
+          const d2 = Math.exp(logLo + j * step)
+          const ll = logLik(data, d1, d2)
+          if (Number.isFinite(ll) && ll > bestLL) {
+            bestLL = ll
+            seedD1 = d1
+            seedD2 = d2
+          }
         }
       }
     }

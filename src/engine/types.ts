@@ -52,6 +52,10 @@ export interface FitOptions {
    *  imprecision. The primary/displayed fit and the scipy-parity path NEVER pass this. Closed-form and
    *  Newton families ignore it. */
   quick?: boolean
+  /** An optional seed for an iterative MLE — the parametric bootstrap passes the original point
+   *  estimate so a replicate refit starts near its optimum, skipping the cold seed search; ignored by
+   *  closed-form families and only used in quick refits. */
+  warmStart?: FittedParams
 }
 
 export interface Distribution {

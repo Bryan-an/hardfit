@@ -111,6 +111,23 @@ export const studentT: Distribution = {
       throw new Error('student-t: degenerate (zero spread)')
     }
     const loc0 = median
+    // WARM START (bootstrap replicate refits only): the zero-spread + majority-tie guards above ran
+    // FIRST and are NOT bypassed. With those cleared, when the caller passes the original point
+    // estimate with a finite loc and strictly-positive scale, df, seed the optimizer there instead of
+    // the median/IQR/DF_SEED cold seed — a resample's MLE sits beside the original, so the NM
+    // converges in a handful of iterations. A degenerate warmStart (NaN/0/negative) is rejected by
+    // the predicate so the robust cold seed (computed above) is used as before.
+    const ws = opts?.warmStart as StudentTParams | undefined
+    const warmStarted =
+      ws !== undefined &&
+      Number.isFinite(ws.loc) &&
+      Number.isFinite(ws.scale) &&
+      ws.scale > 0 &&
+      Number.isFinite(ws.df) &&
+      ws.df > 0
+    const seed = warmStarted
+      ? [ws.loc, Math.log(ws.scale), Math.log(ws.df)]
+      : [loc0, Math.log(scale0), Math.log(DF_SEED)]
     // Minimize the negLL over UNCONSTRAINED θ = [loc, ln scale, ln df] (so scale, df stay > 0 with
     // no boundary). The Jacobian for the scale reparameterization adds `n·θ[LOG_SCALE]` (= n·ln scale)
     // exactly ONCE — NOT folded into stdLogpdf, which is the raw standard-t density (no − ln scale).
@@ -126,11 +143,7 @@ export const studentT: Distribution = {
     }
     // Quick (bootstrap-replicate) refits use the relaxed caps; the primary/parity fit passes
     // `undefined` so `minimize` applies the full parity-grade NM_* defaults.
-    const result = minimize(
-      nll,
-      [loc0, Math.log(scale0), Math.log(DF_SEED)],
-      opts?.quick ? QUICK_NM_OPTIONS : undefined,
-    )
+    const result = minimize(nll, seed, opts?.quick ? QUICK_NM_OPTIONS : undefined)
     const loc = result.x[THETA_LOC] ?? Number.NaN
     const scale = Math.exp(result.x[THETA_LOG_SCALE] ?? Number.NaN)
     // Do NOT cap df: capping at a finite ceiling drops the LL below scipy on near-normal data
