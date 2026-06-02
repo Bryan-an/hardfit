@@ -15,6 +15,12 @@ const SAMPLE_SIZE = 20000
 const MOMENT_RTOL = 0.05
 /** First-k draws compared when asserting two same-seed samplers agree. */
 const REPRO_DRAWS = 10
+/** Inverse-Gaussian MSH sampler statistical test (the ONLY check on this stream — every other IG
+ *  path is pinned to scipy at 1e-9). The IG variance estimator is tail-sensitive (excess kurtosis
+ *  ≈ 6), so use a larger n and a TIGHTER tol than the global 5% to actually distinguish an unbiased
+ *  sampler from a biased-but-plausible one (a correlated-stream bug). Per the plan: N≈50k, ~2–3%. */
+const IG_SAMPLE_SIZE = 50000
+const IG_MOMENT_RTOL = 0.03
 
 /** Draws `n` values from a sampler into an array (advances the one stream). */
 function drawSample(sampler: () => number, n: number): number[] {
@@ -167,6 +173,41 @@ describe('makeSampler: Batch C discrete sampler convention guards (empirical mom
     expectNear(mean(s), (a + b) / 2) // 3.5
     expectNear(populationVariance(s), ((b - a + 1) ** 2 - 1) / 12) // 35/12 ≈ 2.917
   })
+})
+
+describe('makeSampler: Batch D sampler↔quantile convention guards', () => {
+  it('student-t(loc, scale, df) — location-scaled standard t, median/IQR (catches loc/scale swap)', () =>
+    expectSamplerMatchesQuantile(DistributionName.StudentT, { loc: 3, scale: 2, df: 5 }))
+  it('fisher-f(d1, d2) — asymmetric positive support, median/IQR (catches a d1/d2 swap)', () =>
+    expectSamplerMatchesQuantile(DistributionName.FisherF, { d1: 8, d2: 12 }))
+  // Inverse-Gaussian gets a STATISTICAL test (not the median/IQR cross-check): the MSH sampler with
+  // two CORRELATED streams (shared seed) would be biased-but-plausible — median/IQR could still look
+  // right while the accept step is wrong. Mean ≈ mu and variance ≈ mu³/lambda catch a stream
+  // correlation / fold bug. (mu=2, lambda=5 ⇒ mean 2, var 1.6.)
+  it('inverse-gaussian(mu, lambda) — MSH sampler: mean ≈ mu, var ≈ mu³/lambda (catches stream bias)', () => {
+    const mu = 2
+    const lambda = 5
+    const s = drawSample(
+      makeSampler(DistributionName.InverseGaussian, { mu, lambda }, SEED),
+      IG_SAMPLE_SIZE,
+    )
+    // Measured at this seed: mean 2.0032 (0.16% err), var 1.5997 (0.02% err) — both far inside the
+    // 3% tol, so a correlated-stream bias (which would shift these well past 3%) is ruled out.
+    expect(Math.abs(mean(s) - mu)).toBeLessThanOrEqual(IG_MOMENT_RTOL * mu)
+    const expVar = (mu * mu * mu) / lambda
+    expect(Math.abs(populationVariance(s) - expVar)).toBeLessThanOrEqual(IG_MOMENT_RTOL * expVar)
+  })
+  // Nakagami draws √(Gamma) on the squared scale, so its DEFINING moment is E[x²] = Ω. A rate/scale
+  // swap in the gamma factory (passing Ω/m instead of RATE=m/Ω) would shift mean(x²) far off Ω; the
+  // sampler↔quantile cross-check below ALSO catches a swap (median/IQR diverge), belt-and-suspenders.
+  it('nakagami(m, Omega) — √Gamma sampler: mean(x²) ≈ Omega (catches a rate/scale swap)', () => {
+    const m = 1.5
+    const Omega = 4
+    const s = drawSample(makeSampler(DistributionName.Nakagami, { m, Omega }, SEED), SAMPLE_SIZE)
+    expectNear(mean(s.map((x) => x * x)), Omega)
+  })
+  it('nakagami(m, Omega) — sampler↔quantile median/IQR convention guard', () =>
+    expectSamplerMatchesQuantile(DistributionName.Nakagami, { m: 1.5, Omega: 4 }))
 })
 
 describe('makeSampler: reproducibility + guards', () => {

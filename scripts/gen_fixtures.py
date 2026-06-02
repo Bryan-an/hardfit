@@ -121,6 +121,77 @@ UNIT_TINY_3 = [0.3, 0.5, 0.7]
 # Bounded-(0,1) families (M2.3 Batch B) that use the unit-interval datasets instead of the positives.
 UNIT_INTERVAL_FAMILIES = {"beta"}
 
+# --- M2.3 Batch D: Student-t real-support samples ---------------------------
+#
+# Student-t is real-support (the positive/unit/signed sets above are all the wrong shape for
+# gating a heavy-tailed real-support fit), so it gets its OWN datasets: real t(df) draws. They
+# are generated ONCE here from a SEEDED PCG64 stream (np.random.default_rng — version-stable, NOT
+# live system RNG) and rounded to 4 decimals, so the committed JSON is byte-stable across reruns.
+# Per the plan's fixture discipline: use small-ish df (4, 8) so df is IDENTIFIABLE, and the
+# project's moderate-n convention (n=25, n=2000) — NEVER adversarial tiny-n (where scipy's t.fit
+# diverges to degenerate df→0/scale→0 maxima and the gate would mislabel HardFit's correct fit).
+_T_RNG = np.random.default_rng(20260601)
+# n=25, t(df=4, loc=2, scale=1.5): a small heavy-tailed sample where df is well-identified.
+STUDENT_T4_25 = [round(float(v), 4) for v in stats.t(4, loc=2, scale=1.5).rvs(size=25, random_state=_T_RNG)]
+# n=2000, t(df=8, loc=0, scale=1): a large near-normal-ish sample; df identifiable, exercises the
+# 399-edge equiprobable chi-square at scale (verified: @stdlib t-quantile ↔ scipy.ppf to ~1e-15).
+STUDENT_T8_2000 = [round(float(v), 4) for v in stats.t(8, loc=0, scale=1.0).rvs(size=2000, random_state=_T_RNG)]
+
+# --- M2.3 Batch D: Fisher–Snedecor F positive-support samples ---------------
+#
+# F is positive-support (x > 0) and heavy-tailed, so it gets its OWN real F(d1, d2) draws (the
+# generic positive DATASETS are the wrong shape for gating a moderate-df F fit). Generated ONCE from
+# a SEEDED PCG64 stream and rounded to 4 decimals → byte-stable JSON. Per the plan's fixture
+# discipline: moderate df (5,12) / (10,20) so the optimizer's basin is well-defined, and the
+# project's moderate-n convention (n=25, n=2000) — NEVER adversarial tiny-n.
+_F_RNG = np.random.default_rng(20260601)
+# n=25, F(d1=5, d2=12): a small moderate-df sample. scipy.f.fit under-converges here (the parity
+# skip-set covers the d1/d2 diagnostic), so the LL cross-check is the gate.
+FISHER_F5_12_25 = [round(float(v), 4) for v in stats.f(5, 12).rvs(size=25, random_state=_F_RNG)]
+# n=2000, F(d1=10, d2=20): a large moderate-df sample; exercises the 399-edge equiprobable chi-square
+# at scale (verified: @stdlib f-quantile ↔ scipy.ppf to ~1e-15).
+FISHER_F10_20_2000 = [round(float(v), 4) for v in stats.f(10, 20).rvs(size=2000, random_state=_F_RNG)]
+
+# --- M2.3 Batch D: Inverse Gaussian (Wald) positive-support samples ---------
+#
+# Inverse Gaussian is positive-support (x > 0) with a CLOSED-FORM MLE, so it gets its OWN real
+# invgauss draws (the generic positive DATASETS are the wrong shape and — crucially — too small to
+# stress the bisection quantile). THE TRAP: scipy uses invgauss(mu_s=mu/lambda, loc=0, scale=lambda),
+# NOT mu directly. Generated ONCE from a SEEDED PCG64 stream and rounded to 4 decimals → byte-stable.
+# The n=2000 set is LOAD-BEARING: its 399 equiprobable chi-square edges (out to Q(0.9975)) are the
+# ONLY cross-oracle for the engine's geometric-bracket bisection quantile (the unit tests only check
+# self-consistency cdf(quantile(p))≈p); a tail/bracket bug surfaces here against scipy.ppf to ~1e-9.
+_IG_RNG = np.random.default_rng(20260601)
+# n=25, IG(mu=1.5, lambda=2): a small skewed sample (small lambda → heavy right tail).
+INVGAUSS_1_5_2_25 = [
+    round(float(v), 4) for v in stats.invgauss(1.5 / 2.0, loc=0, scale=2.0).rvs(size=25, random_state=_IG_RNG)
+]
+# n=2000, IG(mu=2, lambda=5): a large sample that stresses the bisection's geometric bracket out to
+# the deep upper tail (Q(0.9975)); verified the closed-form MLE == scipy.invgauss.fit remap to ~1e-9.
+INVGAUSS_2_5_2000 = [
+    round(float(v), 4) for v in stats.invgauss(2.0 / 5.0, loc=0, scale=5.0).rvs(size=2000, random_state=_IG_RNG)
+]
+
+# --- M2.3 Batch D: Nakagami-m positive-support samples ----------------------
+#
+# Nakagami is positive-support (x > 0); its MLE reduces EXACTLY to the gamma shape MLE on x²
+# (Ω = mean(x²) closed; m via the 1-D Newton gamma.ts uses). It gets its OWN real nakagami draws
+# (the generic positive DATASETS are the wrong shape for gating a moderate-m fit). THE TRAP: scipy
+# uses nakagami(nu=m, loc=0, scale=√Ω) — Ω = scale² (squared). Generated ONCE from a SEEDED PCG64
+# stream and rounded to 4 decimals → byte-stable. Per the plan's fixture discipline: moderate m and
+# the project's moderate-n convention (n=25, n=2000). m and Ω are BOTH well-identified, so NO parity
+# skip-set entry is needed (unlike the F case, where scipy.f.fit under-converges).
+_NAKA_RNG = np.random.default_rng(20260601)
+# n=25, Nakagami(m=1.5, Omega=4 ⇒ scale=2): a small moderate-fading sample.
+NAKAGAMI_1_5_4_25 = [
+    round(float(v), 4) for v in stats.nakagami(1.5, loc=0, scale=2.0).rvs(size=25, random_state=_NAKA_RNG)
+]
+# n=2000, Nakagami(m=3, Omega=9 ⇒ scale=3): a large lighter-fading sample; exercises the 399-edge
+# equiprobable chi-square at scale (the Gamma-on-x² quantile ↔ scipy.ppf cross-oracle).
+NAKAGAMI_3_9_2000 = [
+    round(float(v), 4) for v in stats.nakagami(3.0, loc=0, scale=3.0).rvs(size=2000, random_state=_NAKA_RNG)
+]
+
 # --- M2.3 Batch C: integer COUNT datasets (the continuous datasets are out-of-support for discrete
 # fits — non-integer values make logPMF -> -inf). Each discrete family gets count data on its own
 # support; values are stored as ints so the engine and the discrete chi-square round-trip them.
@@ -151,6 +222,20 @@ def datasets_for(dist_name: str) -> dict[str, list[float]]:
         return DISCRETE_DATASETS[dist_name]
     if dist_name in UNIT_INTERVAL_FAMILIES:
         return {"unit_tiny_3": UNIT_TINY_3, "unit_22": UNIT_22}
+    if dist_name == "student-t":
+        # Real-support t(df) draws (Batch D); NOT the positive/signed sets.
+        return {"student_t4_25": STUDENT_T4_25, "student_t8_2000": STUDENT_T8_2000}
+    if dist_name == "fisher-f":
+        # Real F(d1, d2) draws (Batch D); positive-support, moderate df.
+        return {"fisher_f5_12_25": FISHER_F5_12_25, "fisher_f10_20_2000": FISHER_F10_20_2000}
+    if dist_name == "inverse-gaussian":
+        # Real invgauss draws (Batch D); positive-support. The n=2000 set stresses the bisection
+        # quantile's geometric bracket at the 399 equiprobable edges (its only scipy cross-oracle).
+        return {"invgauss_1_5_2_25": INVGAUSS_1_5_2_25, "invgauss_2_5_2000": INVGAUSS_2_5_2000}
+    if dist_name == "nakagami":
+        # Real nakagami draws (Batch D); positive-support, moderate m. The n=2000 set exercises the
+        # Gamma-on-x² quantile at the 399 equiprobable chi-square edges (its scipy.ppf cross-oracle).
+        return {"nakagami_1_5_4_25": NAKAGAMI_1_5_4_25, "nakagami_3_9_2000": NAKAGAMI_3_9_2000}
     if dist_name in REAL_SUPPORT_FAMILIES:
         return {**DATASETS, "signed_26": SIGNED_26}
     return DATASETS
@@ -934,6 +1019,112 @@ def build_discrete_uniform(data: list[float]) -> dict:
     }
 
 
+# --- M2.3 Batch D builders (multi-parameter MLE via the vendored Nelder–Mead optimizer) ----
+
+
+def build_student_t(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # IDENTITY 1:1 mapping: scipy.stats.t.fit -> (df, loc, scale); HardFit {loc, scale, df} are the
+    # SAME three free params (NO floc/fscale — loc and scale are genuine, free). df FIRST in scipy.
+    df, loc, scale = stats.t.fit(arr)
+    rv = stats.t(df, loc=loc, scale=scale)
+    fixed = {"loc": float(loc), "scale": float(scale), "df": float(df)}
+    # Mode A: iterative 3-D fit -> gate on log-likelihood (HardFit must reach >= scipy's; HardFit
+    # may converge to a marginally BETTER optimum, so param equality is a loose diagnostic only).
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=3),
+        "modeA": {
+            "form": "iterative",
+            "params": {"loc": float(loc), "scale": float(scale), "df": float(df)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 3, n),
+        },
+    }
+
+
+def build_fisher_f(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # scipy.stats.f is 4-param f(dfn, dfd, loc, scale); PIN floc=0, fscale=1 so it is the standard
+    # two-parameter F. fit -> (dfn, dfd, 0, 1); map dfn -> d1, dfd -> d2 (VERIFIED).
+    d1, d2, _loc, _scale = stats.f.fit(arr, floc=0, fscale=1)
+    rv = stats.f(d1, d2, loc=0, scale=1)
+    fixed = {"d1": float(d1), "d2": float(d2)}
+    # Mode A: iterative 2-D fit -> gate on log-likelihood (HardFit must reach >= scipy's). scipy's
+    # f.fit under-converges, so HardFit may reach a BETTER optimum and the params legitimately differ;
+    # the parity skip-set silences the d1/d2 diagnostic while the LL cross-check stays the contract.
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"d1": float(d1), "d2": float(d2)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_inverse_gaussian(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # CLOSED-FORM MLE (emitted directly, levy-style — NOT scipy.fit's params): mu = sample mean,
+    # lambda = n / (Σ(1/x) − n/mu). Emitting the closed form makes the 1e-9 param gate independent of
+    # scipy.fit's convergence.
+    mu = float(np.mean(arr))
+    lam = float(n / (np.sum(1.0 / arr) - n / mu))
+    # THE TRAP: scipy.stats.invgauss uses (mu_s = mu/lambda, loc=0, scale=lambda) — NOT mu directly.
+    rv = stats.invgauss(mu / lam, loc=0, scale=lam)
+    fixed = {"mu": mu, "lambda": lam}
+    # Independent LL floor from scipy's OWN optimizer (preserves the formula-independence of the LL
+    # gate): invgauss.fit(x, floc=0) -> (mu_s, 0, scale) ⇒ HardFit lambda = scale, mu = mu_s·scale.
+    mu_s_fit, _loc_fit, scale_fit = stats.invgauss.fit(arr, floc=0)
+    ll = log_lik(data, stats.invgauss(mu_s_fit, loc=0, scale=scale_fit))
+    # Cross-check the closed form against scipy's independent fit (VERIFIED equal to ~1e-9): a bug in
+    # either route fails this loudly at generation time, before it can reach the committed JSON.
+    assert abs(mu - mu_s_fit * scale_fit) < 1e-6 * max(1.0, abs(mu)), "IG mu mismatch vs scipy.fit"
+    assert abs(lam - scale_fit) < 1e-6 * max(1.0, abs(lam)), "IG lambda mismatch vs scipy.fit"
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "closed-form",
+            "params": {"mu": mu, "lambda": lam},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
+def build_nakagami(data: list[float]) -> dict:
+    arr = np.asarray(data, dtype=float)
+    n = len(arr)
+    # scipy.stats.nakagami(nu, loc, scale); PIN floc=0 so it is the standard two-parameter Nakagami.
+    # fit -> (nu, 0, scale). HardFit m = nu, Omega = scale² (THE TRAP — scipy's scale multiplies x,
+    # Ω is a SECOND-moment quantity; forgetting to square the scale makes Ω off by a √).
+    nu, _loc, scale = stats.nakagami.fit(arr, floc=0)
+    rv = stats.nakagami(nu, loc=0, scale=scale)
+    fixed = {"m": float(nu), "Omega": float(scale**2)}
+    # Mode A: iterative fit (m via the gamma-on-x² 1-D Newton, Ω = mean(x²) closed) -> gate on
+    # log-likelihood (HardFit must reach >= scipy's). m and Ω are BOTH well-identified, so the loose
+    # param diagnostic also holds (no parity skip-set entry needed, unlike fisher-f).
+    ll = log_lik(data, rv)
+    return {
+        "fixedParams": fixed,
+        "modeB": gof_block(data, rv, n_params=2),
+        "modeA": {
+            "form": "iterative",
+            "params": {"m": float(nu), "Omega": float(scale**2)},
+            "logLik": ll,
+            "aicc": aicc_or_sentinel(ll, 2, n),
+        },
+    }
+
+
 BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "normal": build_normal,
     "lognormal": build_lognormal,
@@ -962,6 +1153,11 @@ BUILDERS: dict[str, Callable[[list[float]], dict]] = {
     "geometric": build_geometric,
     "negative-binomial": build_negative_binomial,
     "discrete-uniform": build_discrete_uniform,
+    # M2.3 Batch D (multi-parameter MLE)
+    "student-t": build_student_t,
+    "fisher-f": build_fisher_f,
+    "inverse-gaussian": build_inverse_gaussian,
+    "nakagami": build_nakagami,
 }
 
 

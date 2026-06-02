@@ -8,12 +8,14 @@ const sample = [
 ]
 
 describe('fitAll', () => {
-  it('fits 19 of 24 distributions on continuous positive data, ranks by AICc, weights sum to 1', () => {
+  it('fits 23 of 28 distributions on continuous positive data, ranks by AICc, weights sum to 1', () => {
     const res = fitAll(sample)
     expect(res.n).toBe(sample.length)
     // This sample is continuous (non-integer) and > 1. Beta needs 0 < x < 1, and the 4 discrete
-    // families reject the non-integer values — so 5 fail and the other 19 rank.
-    expect(res.ranked.length).toBe(19)
+    // families reject the non-integer values — so 5 fail and the other 23 rank (incl. Student-t,
+    // Fisher–Snedecor F, Inverse Gaussian, and Nakagami, all of which accept this positive
+    // continuous data).
+    expect(res.ranked.length).toBe(23)
     expect(res.failures.map((f) => f.name).sort()).toEqual(
       [
         DistributionName.Beta,
@@ -51,10 +53,11 @@ describe('fitAll', () => {
   it('reports failures (not crashes) when a distribution rejects the data', () => {
     const withNeg = [-1, 2, 3, 4, 5, 6] // integers, one negative
     // Positive-support families reject the negative value: lognormal/gamma/weibull/pareto/frechet/
-    // levy/chisquare/chi/invgamma/betaprime need x > 0, exponential/rayleigh need x >= 0, beta needs
-    // 0 < x < 1, and the discrete poisson/geometric/negative-binomial need x >= 0. The real-support
-    // families (normal/uniform/laplace/logistic/gumbel/cauchy/cosine) survive — AS DOES discrete
-    // uniform, whose support is any contiguous integer range (here {-1,…,6}), so it fits.
+    // levy/chisquare/chi/invgamma/betaprime/fisher-f/inverse-gaussian/nakagami need x > 0,
+    // exponential/rayleigh need x >= 0, beta needs 0 < x < 1, and the discrete poisson/geometric/
+    // negative-binomial need x >= 0. The real-support families (normal/uniform/laplace/logistic/
+    // gumbel/cauchy/cosine/student-t) survive — AS DOES discrete uniform, whose support is any
+    // contiguous integer range (here {-1,…,6}).
     const res = fitAll(withNeg)
     const failed = res.failures.map((f) => f.name).sort()
     expect(failed).toEqual(
@@ -64,12 +67,15 @@ describe('fitAll', () => {
         DistributionName.Chi,
         DistributionName.ChiSquared,
         DistributionName.Exponential,
+        DistributionName.FisherF,
         DistributionName.Frechet,
         DistributionName.Gamma,
         DistributionName.Geometric,
+        DistributionName.InverseGaussian,
         DistributionName.InvGamma,
         DistributionName.Levy,
         DistributionName.Lognormal,
+        DistributionName.Nakagami,
         DistributionName.NegativeBinomial,
         DistributionName.Pareto,
         DistributionName.Poisson,

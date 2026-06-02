@@ -6,6 +6,7 @@ import chisquareSampler from '@stdlib/random-base-chisquare'
 import cosineSampler from '@stdlib/random-base-cosine'
 import discreteUniformSampler from '@stdlib/random-base-discrete-uniform'
 import exponentialSampler from '@stdlib/random-base-exponential'
+import fSampler from '@stdlib/random-base-f'
 import frechetSampler from '@stdlib/random-base-frechet'
 import gammaSampler from '@stdlib/random-base-gamma'
 import geometricSampler from '@stdlib/random-base-geometric'
@@ -20,8 +21,10 @@ import normalSampler from '@stdlib/random-base-normal'
 import paretoSampler from '@stdlib/random-base-pareto-type1'
 import poissonSampler from '@stdlib/random-base-poisson'
 import rayleighSampler from '@stdlib/random-base-rayleigh'
+import tSampler from '@stdlib/random-base-t'
 import uniformSampler from '@stdlib/random-base-uniform'
 import weibullSampler from '@stdlib/random-base-weibull'
+import { BOOTSTRAP_SEED_SALT } from './constants'
 import { DistributionName, type FittedParams } from './types'
 
 /**
@@ -59,6 +62,11 @@ type PoissonParams = { lambda: number }
 type GeometricParams = { p: number }
 type NegativeBinomialParams = { r: number; p: number }
 type DiscreteUniformParams = { a: number; b: number }
+// M2.3 Batch D — multi-parameter MLE families; same convention as each module + density slots.
+type StudentTParams = { loc: number; scale: number; df: number } // standard t wrapped by loc+scale
+type FisherFParams = { d1: number; d2: number } // d1 = numerator df, d2 = denominator df
+type InverseGaussianParams = { mu: number; lambda: number } // mu = mean, lambda = shape (Wald)
+type NakagamiParams = { m: number; Omega: number } // m = shape, Omega = spread; x² ~ Gamma(m, RATE=m/Ω)
 
 /** Fréchet's location is fixed at 0 in HardFit (a 2-parameter Fréchet); the sampler's 3rd
  *  positional arg is that location `m`. Named to avoid a bare 0 literal in the factory call. */
@@ -66,6 +74,33 @@ const FRECHET_LOCATION = 0
 /** Lévy's location is fixed at 0 in HardFit (a 1-parameter Lévy); the sampler's 1st positional
  *  arg is that location `mu`. Named to avoid a bare 0 literal in the factory call. */
 const LEVY_LOCATION = 0
+/** Standard-normal mean/sd for the @stdlib normal factory in the Inverse-Gaussian (MSH) sampler: the
+ *  MSH transform consumes a STANDARD normal draw `nu`. Named to avoid bare 0/1 literals in the factory
+ *  call (same convention as FRECHET_LOCATION / LEVY_LOCATION above). */
+const STD_NORMAL_MEAN = 0
+const STD_NORMAL_SD = 1
+/** U(0,1) support bounds for the @stdlib uniform factory in the Inverse-Gaussian (MSH) sampler: the
+ *  accept step compares a U(0,1) draw against mu/(mu+x). Named to avoid bare 0/1 literals. */
+const UNIFORM_LO = 0
+const UNIFORM_HI = 1
+/** Inverse-Gaussian (Michael–Schucany–Haas) VARIATE-TRANSFORM constants (NOT the accept step, which
+ *  carries no numeric literal). The MSH transform of a standard-normal draw nu (y = nu²) is
+ *    x = μ + (μ²·y)/(2λ) − (μ/(2λ))·√(4·μ·λ·y + μ²·y²).
+ *  IG_TRANSFORM_DENOM_COEFF = the 2 in the two `2λ` denominators of the additive and √-coefficient
+ *  terms. */
+const IG_TRANSFORM_DENOM_COEFF = 2
+/** IG_TRANSFORM_RADICAND_COEFF = the 4 multiplying μ·λ·y inside the radicand of the MSH transform
+ *  above. Named separately from IG_TRANSFORM_DENOM_COEFF so each literal documents its own operation. */
+const IG_TRANSFORM_RADICAND_COEFF = 4
+
+/** Derives a DISTINCT sub-stream seed from the master `seed` by mixing in `BOOTSTRAP_SEED_SALT`
+ *  (Knuth's golden-ratio constant) as an unsigned 32-bit value. The MSH sampler draws a normal and a
+ *  uniform per variate; seeding BOTH streams with the same `seed` would correlate the accept step
+ *  with the generated x and bias the draws — so the uniform stream uses this salted seed. The
+ *  `>>> 0` keeps it a non-negative 32-bit integer the @stdlib factory accepts. */
+function saltSeed(seed: number): number {
+  return (seed ^ BOOTSTRAP_SEED_SALT) >>> 0
+}
 
 /**
  * Builds a seeded iid sampler for one distribution in HardFit's param convention. Each
@@ -176,6 +211,43 @@ export function makeSampler(name: string, p: FittedParams, seed: number): () => 
     case DistributionName.DiscreteUniform: {
       const { a, b } = p as DiscreteUniformParams
       return discreteUniformSampler.factory(a, b, { seed }) // inclusive integers {a,…,b}
+    }
+    case DistributionName.StudentT: {
+      const { loc, scale, df } = p as StudentTParams
+      const draw = tSampler.factory(df, { seed }) // STANDARD t (df only); wrap with loc + scale·z
+      return () => loc + scale * draw()
+    }
+    case DistributionName.FisherF: {
+      const { d1, d2 } = p as FisherFParams
+      const draw = fSampler.factory(d1, d2, { seed }) // (d1 = numerator df, d2 = denominator df)
+      return () => draw()
+    }
+    case DistributionName.InverseGaussian: {
+      const { mu, lambda } = p as InverseGaussianParams
+      // Michael–Schucany–Haas: x is a deterministic transform of a standard-normal draw, then an
+      // accept step folds it to mu²/x with probability 1 − mu/(mu+x). The two streams MUST be
+      // independently seeded — a shared seed correlates the uniform accept with the normal-derived x
+      // and biases the sampler (a smoke test would not catch it; the statistical test does).
+      const drawNormal = normalSampler.factory(STD_NORMAL_MEAN, STD_NORMAL_SD, { seed }) // std normal stream
+      const drawUniform = uniformSampler.factory(UNIFORM_LO, UNIFORM_HI, { seed: saltSeed(seed) }) // distinct U(0,1) stream
+      return () => {
+        const nu = drawNormal()
+        const y = nu * nu
+        const x =
+          mu +
+          (mu * mu * y) / (IG_TRANSFORM_DENOM_COEFF * lambda) -
+          (mu / (IG_TRANSFORM_DENOM_COEFF * lambda)) *
+            Math.sqrt(IG_TRANSFORM_RADICAND_COEFF * mu * lambda * y + mu * mu * y * y)
+        return drawUniform() <= mu / (mu + x) ? x : (mu * mu) / x
+      }
+    }
+    case DistributionName.Nakagami: {
+      const { m, Omega } = p as NakagamiParams
+      // X ~ Nakagami(m, Ω) ⇔ X² ~ Gamma(shape=m, scale=Ω/m), so draw the squared variate from the
+      // gamma factory and take its √. @stdlib gamma takes shape + RATE, and the rate is m/Ω (the
+      // INVERSE of the natural scale Ω/m) — the SAME slot-trap as gamma.ts / nakagami.ts cdf.
+      const drawSquared = gammaSampler.factory(m, m / Omega, { seed }) // shape=m, RATE=m/Ω (not scale)
+      return () => Math.sqrt(drawSquared())
     }
     default:
       throw new Error(`makeSampler: no sampler for '${name}'`)

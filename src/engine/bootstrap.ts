@@ -262,7 +262,14 @@ export async function bootstrapFit(
 
     let tb: FittedParams
     try {
-      tb = dist.fit(sample)
+      // Quick refit: the B replicates don't need parity-gate precision (MC error across replicates
+      // dominates any single replicate's sub-1e-6 imprecision). Cheap closed-form/Newton families
+      // ignore `opts`; only the optimizer-fit families read it to relax their NM caps.
+      // WARM START: seed the replicate refit at the original point estimate (`fittedParams`). A
+      // resample's MLE sits beside the original, so the optimizer-fit families (Student-t, Fisher-F)
+      // start near their optimum — skipping Fisher-F's GRID_STEPS² cold-seed scan and letting the NM
+      // converge in a handful of iterations. Closed-form/Newton families ignore it.
+      tb = dist.fit(sample, { quick: true, warmStart: fittedParams })
     } catch {
       continue // degenerate synthetic sample → skip this replicate
     }
@@ -280,12 +287,15 @@ export async function bootstrapFit(
     }
   }
 
-  // 4. Jackknife for BCa acceleration (skipped above the cap → percentile fallback). A leave-one-out
-  //    refit can throw for a boundary/conditional fit (e.g. a negative-binomial subset that is no
-  //    longer overdispersed), so guard it: on failure fall back to percentile CIs rather than
-  //    discarding the whole fit's intervals.
+  // 4. Jackknife for BCa acceleration. SKIPPED (→ percentile fallback) when either:
+  //    - the family is `expensiveFit` (Student-t, Fisher-F): n leave-one-out Nelder–Mead refits
+  //      would be an O(n·NM) blowup — the very hang this change bounds; or
+  //    - n exceeds the cap (O(n) refits, O(n²) for the cheap Newton families) — a freeze hazard.
+  //    A leave-one-out refit can also throw for a boundary/conditional fit (e.g. a negative-binomial
+  //    subset that is no longer overdispersed), so guard it: on failure fall back to percentile CIs
+  //    rather than discarding the whole fit's intervals.
   let jt: Record<string, number[]> | undefined
-  if (n <= BCA_JACKKNIFE_MAX_N) {
+  if (!dist.expensiveFit && n <= BCA_JACKKNIFE_MAX_N) {
     try {
       jt = jackknife(dist, data)
     } catch {
