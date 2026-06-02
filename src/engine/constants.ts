@@ -60,3 +60,21 @@ export const NM_REFLECTION = 1
 export const NM_EXPANSION = 2
 export const NM_CONTRACTION = 0.5
 export const NM_SHRINK = 0.5
+
+// --- Relaxed Nelder–Mead caps for bootstrap replicate refits (fit(data, { quick: true })) ---
+// The B parametric-bootstrap replicate refits do NOT need parity-gate precision: Monte-Carlo error
+// across the B replicates dominates any single replicate's sub-1e-6 point-estimate imprecision. So
+// the quick path trades the full NM_* caps for these relaxed ones, which bounds the per-refit cost
+// for the optimizer-fit families (Student-t, Fisher-F). The primary/displayed fit and the scipy-
+// parity path keep the FULL NM_* caps — they never pass `{ quick: true }`.
+/** Relaxed iteration cap per restart for quick refits (vs NM_MAX_ITERATIONS=200). */
+export const NM_BOOTSTRAP_MAX_ITERATIONS = 60
+/** No restarts for quick refits (vs NM_MAX_RESTARTS=2): the parity-clearing fresh-simplex polish is
+ *  the most expensive phase and is unnecessary when MC error across replicates dominates. */
+export const NM_BOOTSTRAP_MAX_RESTARTS = 0
+/** Relaxed objective-spread tolerance for quick refits (vs NM_F_TOL=1e-9): 1e-6 is well below the
+ *  scale of the MC error a single replicate contributes. */
+export const NM_BOOTSTRAP_F_TOL = 1e-6
+/** Relaxed eval budget for quick refits (vs NM_MAX_FUNCTION_EVALS=2000): the true freeze guard,
+ *  sized so a quick refit terminates quickly even on a pathological synthetic replicate. */
+export const NM_BOOTSTRAP_MAX_FUNCTION_EVALS = 400

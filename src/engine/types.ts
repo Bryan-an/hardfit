@@ -43,13 +43,28 @@ export type FittedParams = Record<string, number>
  *  continuous fits, chi-square for discrete. M2.3's discrete batch just flips this flag. */
 export type DistributionKind = 'continuous' | 'discrete'
 
+/** Per-fit knobs. The optional shape keeps families implementing `fit(data)` assignable to the
+ *  `fit(data, opts?)` interface method with NO change — only the optimizer-fit families read it. */
+export interface FitOptions {
+  /** When true, the fit uses RELAXED Nelder–Mead caps (the `NM_BOOTSTRAP_*` constants) instead of the
+   *  full parity-grade `NM_*` defaults. Set ONLY by the parametric bootstrap's B-replicate refits,
+   *  where Monte-Carlo error across replicates dwarfs any single replicate's sub-1e-6 point-estimate
+   *  imprecision. The primary/displayed fit and the scipy-parity path NEVER pass this. Closed-form and
+   *  Newton families ignore it. */
+  quick?: boolean
+}
+
 export interface Distribution {
   readonly name: string // machine id, e.g. 'normal'
   readonly label: string // display label, e.g. 'Normal'
   readonly k: number // number of estimated parameters (for AIC)
   readonly kind: DistributionKind // GoF routing: EDF tests for continuous, chi-square for discrete
+  /** true for families whose MLE uses the iterative Nelder–Mead optimizer (Student-t, Fisher-F). The
+   *  parametric bootstrap skips the O(n) BCa jackknife for them — n leave-one-out NM refits would be an
+   *  O(n·NM) blowup — and uses percentile CIs instead. */
+  readonly expensiveFit?: boolean
   /** MLE fit. Throws an Error if `data` violates the distribution's support. */
-  fit(data: readonly number[]): FittedParams
+  fit(data: readonly number[], opts?: FitOptions): FittedParams
   /** Natural-log density at x for fitted params (data scale). */
   logpdf(x: number, p: FittedParams): number
   /** Cumulative distribution function at x for fitted params. */

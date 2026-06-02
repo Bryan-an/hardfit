@@ -1,9 +1,24 @@
 import tCdf from '@stdlib/stats-base-dists-t-cdf'
 import tLogpdf from '@stdlib/stats-base-dists-t-logpdf'
 import tQuantile from '@stdlib/stats-base-dists-t-quantile'
+import {
+  NM_BOOTSTRAP_F_TOL,
+  NM_BOOTSTRAP_MAX_FUNCTION_EVALS,
+  NM_BOOTSTRAP_MAX_ITERATIONS,
+  NM_BOOTSTRAP_MAX_RESTARTS,
+} from '../constants'
 import { populationVariance, sortedQuantile } from '../math'
 import { minimize } from '../optimize'
-import { type Distribution, DistributionName, type FittedParams } from '../types'
+import { type Distribution, DistributionName, type FitOptions, type FittedParams } from '../types'
+
+/** Relaxed Nelder–Mead options for a quick (bootstrap-replicate) refit; the full-precision primary
+ *  fit passes `undefined` so `minimize` applies the parity-grade NM_* defaults instead. */
+const QUICK_NM_OPTIONS = {
+  maxIterations: NM_BOOTSTRAP_MAX_ITERATIONS,
+  maxRestarts: NM_BOOTSTRAP_MAX_RESTARTS,
+  fTol: NM_BOOTSTRAP_F_TOL,
+  maxFunctionEvals: NM_BOOTSTRAP_MAX_FUNCTION_EVALS,
+} as const
 
 /** Fewest observations a 3-parameter Student-t MLE can be estimated from. (AICc needs n ≥ 5 for a
  *  finite small-sample correction; at n=4 the t's AICc is +Infinity → it sorts last with weight 0,
@@ -66,7 +81,8 @@ export const studentT: Distribution = {
   label: "Student's t",
   k: 3,
   kind: 'continuous',
-  fit(data): StudentTParams {
+  expensiveFit: true, // 3-D Nelder–Mead MLE → bootstrap skips the O(n) BCa jackknife
+  fit(data, opts?: FitOptions): StudentTParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`student-t: need n >= ${MIN_SAMPLE_SIZE}`)
     const sorted = [...data].sort((a, b) => a - b)
     const median = sortedQuantile(sorted, MEDIAN_PROB)
@@ -92,7 +108,13 @@ export const studentT: Distribution = {
       for (const x of data) s += stdLogpdf(x, loc, scale, df)
       return -s + n * logScale
     }
-    const result = minimize(nll, [loc0, Math.log(scale0), Math.log(DF_SEED)])
+    // Quick (bootstrap-replicate) refits use the relaxed caps; the primary/parity fit passes
+    // `undefined` so `minimize` applies the full parity-grade NM_* defaults.
+    const result = minimize(
+      nll,
+      [loc0, Math.log(scale0), Math.log(DF_SEED)],
+      opts?.quick ? QUICK_NM_OPTIONS : undefined,
+    )
     const loc = result.x[THETA_LOC] ?? Number.NaN
     const scale = Math.exp(result.x[THETA_LOG_SCALE] ?? Number.NaN)
     // Do NOT cap df: capping at a finite ceiling drops the LL below scipy on near-normal data

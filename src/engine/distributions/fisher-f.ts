@@ -1,8 +1,23 @@
 import betaprimeLogpdf from '@stdlib/stats-base-dists-betaprime-logpdf'
 import fCdf from '@stdlib/stats-base-dists-f-cdf'
 import fQuantile from '@stdlib/stats-base-dists-f-quantile'
+import {
+  NM_BOOTSTRAP_F_TOL,
+  NM_BOOTSTRAP_MAX_FUNCTION_EVALS,
+  NM_BOOTSTRAP_MAX_ITERATIONS,
+  NM_BOOTSTRAP_MAX_RESTARTS,
+} from '../constants'
 import { minimize } from '../optimize'
-import { type Distribution, DistributionName, type FittedParams } from '../types'
+import { type Distribution, DistributionName, type FitOptions, type FittedParams } from '../types'
+
+/** Relaxed Nelder–Mead options for a quick (bootstrap-replicate) refit; the full-precision primary
+ *  fit passes `undefined` so `minimize` applies the parity-grade NM_* defaults instead. */
+const QUICK_NM_OPTIONS = {
+  maxIterations: NM_BOOTSTRAP_MAX_ITERATIONS,
+  maxRestarts: NM_BOOTSTRAP_MAX_RESTARTS,
+  fTol: NM_BOOTSTRAP_F_TOL,
+  maxFunctionEvals: NM_BOOTSTRAP_MAX_FUNCTION_EVALS,
+} as const
 
 /** Fewest observations a 2-parameter Fisher–Snedecor F MLE can be estimated from. */
 const MIN_SAMPLE_SIZE = 2
@@ -87,7 +102,8 @@ export const fisherF: Distribution = {
   label: 'Fisher–Snedecor F',
   k: 2,
   kind: 'continuous',
-  fit(data): FisherFParams {
+  expensiveFit: true, // 2-D Nelder–Mead MLE → bootstrap skips the O(n) BCa jackknife
+  fit(data, opts?: FitOptions): FisherFParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`fisher-f: need n >= ${MIN_SAMPLE_SIZE}`)
     for (const x of data) {
       if (!(x > 0)) throw new Error('fisher-f: data must be strictly positive (x > 0)')
@@ -121,7 +137,13 @@ export const fisherF: Distribution = {
       const d2 = Math.exp(theta[THETA_LOG_D2] ?? Number.NaN)
       return -logLik(data, d1, d2)
     }
-    const result = minimize(nll, [Math.log(seedD1), Math.log(seedD2)])
+    // Quick (bootstrap-replicate) refits use the relaxed caps; the primary/parity fit passes
+    // `undefined` so `minimize` applies the full parity-grade NM_* defaults.
+    const result = minimize(
+      nll,
+      [Math.log(seedD1), Math.log(seedD2)],
+      opts?.quick ? QUICK_NM_OPTIONS : undefined,
+    )
     // Back-transform with the runaway cap (see DF_CAP): df→∞ pushes the F toward a point mass at 1
     // and lets the unconstrained ln-search drift; clamp to a finite ceiling that never binds on real
     // moderate-df data.

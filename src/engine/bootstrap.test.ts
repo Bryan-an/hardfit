@@ -4,6 +4,7 @@ import { BCA_JACKKNIFE_MAX_N } from './constants'
 import { exponential } from './distributions/exponential'
 import { normal } from './distributions/normal'
 import { poisson } from './distributions/poisson'
+import { studentT } from './distributions/student-t'
 import { mean } from './math'
 import { makeSampler } from './sampling'
 import type { Distribution, FittedParams } from './types'
@@ -238,6 +239,36 @@ describe('bootstrapFit (fused CIs + GoF p-values)', () => {
     }
   })
 
+  it('EXPENSIVE FAMILY (student-t): jackknife skipped ⇒ percentile CIs, finite endpoints', async () => {
+    // Student-t's MLE is the iterative Nelder–Mead fit (expensiveFit=true), so the parametric
+    // bootstrap must SKIP the O(n) BCa jackknife (n leave-one-out NM refits would be an O(n·NM)
+    // blowup) and report percentile CIs instead. n stays well under BCA_JACKKNIFE_MAX_N so this
+    // verifies the expensiveFit gate, not the n-cap gate.
+    const data = simulate(studentT, { loc: 0, scale: 1, df: 5 }, 60, 4242)
+    const fitted = studentT.fit(data)
+    const { paramCIs } = await bootstrapFit(studentT, data, fitted, { B, alpha: ALPHA, seed: SEED })
+    for (const ci of Object.values(paramCIs)) {
+      expect(ci.method).toBe('percentile') // jackknife skipped → percentile fallback
+      expect(Number.isFinite(ci.percentile[0])).toBe(true)
+      expect(Number.isFinite(ci.percentile[1])).toBe(true)
+      // bca mirrors percentile when the jackknife is skipped.
+      expect(Number.isFinite(ci.bca[0])).toBe(true)
+      expect(Number.isFinite(ci.bca[1])).toBe(true)
+    }
+  })
+
+  it('CHEAP FAMILY (normal): jackknife still runs ⇒ method=bca (unchanged)', async () => {
+    // A closed-form (non-expensiveFit) family keeps the full BCa path: the jackknife runs (n is
+    // under the cap) and the per-param method is 'bca'. This pins that CHANGE 1 left cheap
+    // families' behavior untouched.
+    const data = simulate(normal, { mu: 5, sigma: 2 }, 60, 777)
+    const fitted = normal.fit(data)
+    const { paramCIs } = await bootstrapFit(normal, data, fitted, { B, alpha: ALPHA, seed: SEED })
+    for (const ci of Object.values(paramCIs)) {
+      expect(ci.method).toBe('bca')
+    }
+  })
+
   it('discrete fit: param CIs are computed but GoF resampling is skipped (gofPValues null)', async () => {
     // The Batch C kind-branch: a discrete law's EDF statistics are invalid under ties, so the
     // bootstrap must NOT resample them (that would yield a spurious ~1/(B+1) p-value); it still
@@ -252,5 +283,29 @@ describe('bootstrapFit (fused CIs + GoF p-values)', () => {
     expect(lambdaCI.bca[0]).toBeLessThanOrEqual(lambdaCI.point)
     expect(lambdaCI.point).toBeLessThanOrEqual(lambdaCI.bca[1])
     expect(Number.isFinite(lambdaCI.bca[0]) && Number.isFinite(lambdaCI.bca[1])).toBe(true)
+  })
+})
+
+describe('quick-mode fit (relaxed NM caps for bootstrap replicate refits)', () => {
+  /** Relative tolerance for quick-vs-full params: quick mode deliberately drops sub-1e-6 precision
+   *  (fewer iterations, no restarts, looser fTol), so endpoints agree only to a few percent. */
+  const QUICK_REL_TOL = 0.05
+
+  function simulate(dist: Distribution, params: FittedParams, n: number, seed: number): number[] {
+    const draw = makeSampler(dist.name, params, seed)
+    return Array.from({ length: n }, () => draw())
+  }
+
+  it('student-t fit(data,{quick:true}) returns finite params close to fit(data)', () => {
+    const data = simulate(studentT, { loc: 1, scale: 2, df: 6 }, 80, 9090)
+    const full = studentT.fit(data)
+    const quick = studentT.fit(data, { quick: true })
+    for (const key of Object.keys(full)) {
+      const f = full[key] ?? Number.NaN
+      const q = quick[key] ?? Number.NaN
+      expect(Number.isFinite(q)).toBe(true)
+      // Relative agreement: |q − f| ≤ tol·max(|f|, 1) — loose because quick drops sub-1e-6 precision.
+      expect(Math.abs(q - f)).toBeLessThanOrEqual(QUICK_REL_TOL * Math.max(Math.abs(f), 1))
+    }
   })
 })
