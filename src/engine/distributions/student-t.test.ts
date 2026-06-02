@@ -76,6 +76,12 @@ describe('student-t', () => {
   })
   it('rejects degenerate (zero-spread) data', () =>
     expect(() => studentT.fit([7, 7, 7, 7, 7])).toThrow())
+  it('rejects a strict majority of identical values (unbounded MLE — mirrors cauchy)', () => {
+    // 4 of 5 points tie ⇒ scale → 0, df → 0 drives the LL → +∞; without the guard student-t fits
+    // {scale ≈ 4e-154, df ≈ 0.008} with LL ≈ +1390 and WINS the AICc ranking with a degenerate fit.
+    // (Regression for a Batch D adversarial-verification finding; cf. cauchy's identical guard.)
+    expect(() => studentT.fit([3, 3, 3, 3, 9])).toThrow(/majority/)
+  })
   it('rejects too-small samples (n < 4)', () => expect(() => studentT.fit([1, 2, 3])).toThrow())
   it('k = 3', () => expect(studentT.k).toBe(3))
   it("kind = 'continuous'", () => expect(studentT.kind).toBe('continuous'))

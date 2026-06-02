@@ -84,6 +84,22 @@ export const studentT: Distribution = {
   expensiveFit: true, // 3-D Nelder–Mead MLE → bootstrap skips the O(n) BCa jackknife
   fit(data, opts?: FitOptions): StudentTParams {
     if (data.length < MIN_SAMPLE_SIZE) throw new Error(`student-t: need n >= ${MIN_SAMPLE_SIZE}`)
+    // The Student-t MLE is UNBOUNDED (scale → 0, df → 0 ⇒ log-likelihood → +∞) when a STRICT
+    // majority of points share one value: those points pin the location there while the scale
+    // collapses and the heavy-tailed density spikes without limit, so the optimizer returns a
+    // near-degenerate tiny-scale fit whose large-but-finite LL spuriously RANKS BEST. Cauchy
+    // (Student-t at df = 1) already guards this exact pathology, and df is free here (so df = 1 is
+    // in range) — mirror it. A df lower bound would NOT suffice (df = 1 still diverges). See cauchy.ts.
+    const counts = new Map<number, number>()
+    let maxCount = 0
+    for (const x of data) {
+      const c = (counts.get(x) ?? 0) + 1
+      counts.set(x, c)
+      if (c > maxCount) maxCount = c
+    }
+    if (maxCount * 2 > data.length) {
+      throw new Error('student-t: degenerate (a majority of values are identical; MLE unbounded)')
+    }
     const sorted = [...data].sort((a, b) => a - b)
     const median = sortedQuantile(sorted, MEDIAN_PROB)
     const iqr = sortedQuantile(sorted, Q3_PROB) - sortedQuantile(sorted, Q1_PROB)
