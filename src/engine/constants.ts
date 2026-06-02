@@ -1,6 +1,10 @@
 /** Minimum sample size fitAll will accept.
- *  AICc's small-sample correction needs n - k - 1 > 0; the richest model here has k = 2,
- *  so n >= k + 2 = 4 is the smallest n yielding a finite AICc for every distribution. */
+ *  AICc's small-sample correction needs n - k - 1 > 0. Since Batch D the richest model is
+ *  k = 3 (Student-t), so a FINITE Student-t AICc needs n >= k + 2 = 5; at n = 4 the t's
+ *  AICc is +Infinity (aicc() returns POSITIVE_INFINITY when n - k - 1 <= 0) → it ranks last
+ *  with weight 0, gracefully, while the k <= 2 families still fit and score finitely. We KEEP
+ *  this floor at 4 (not 5): n = 4 yields a finite AICc for every k <= 2 distribution, and the
+ *  lone k = 3 t simply sorts to the bottom rather than being excluded. */
 export const MIN_FIT_SAMPLE_SIZE = 4
 /** Max iterations for the gamma/weibull shape-MLE Newton loops. */
 export const MAX_NEWTON_ITERATIONS = 100
